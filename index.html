@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Dongle&display=swap" rel="stylesheet">
 
-<title>Broadcom 문서 뷰어 & 다운로드</title>
+<title>EoS 문서 뷰어 & 다운로드</title>
 
 <style>
   body { font-family: "Segoe UI", Arial, sans-serif; background: #f5f7fa; margin: 20px; color:#333; }
@@ -261,6 +261,38 @@
     color: #6b7280;
     text-align: center;
   }
+  
+  .doc-btn svg {
+  width: 18px;
+  height: 18px;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  fill: none;
+  transition: 0.25s;
+}
+
+/* Hover Glow */
+.doc-btn:hover svg {
+  filter: drop-shadow(0 0 6px var(--btn-color));
+  transform: scale(1.1);
+}
+
+/* Active */
+.doc-btn.active {
+  color: white;
+  background: var(--btn-color) !important;
+}
+.doc-btn.active svg {
+  stroke: #fff;
+}
+
+/* 버튼에 색상 적용하기 위해 JS가 style에 넣어줄 변수 */
+.doc-btn {
+  --btn-color: #2563eb;
+}
+
+  
+  
 </style>
 </head>
 
@@ -280,7 +312,7 @@
 		
 	<h1 class="dongle-regular">
 	  <div class="title-left">
-	    Broadcom EoS 문서 확인<br>
+	    EoS 문서 확인<br>
 	    <span class="subtitle">by 이테크시스템</span>
 	  </div>
 	  <div class="date-container">
@@ -296,36 +328,79 @@
   <div class="left-card">
     <h4>📥 장비 선택</h4>
 
-    <!-- 문서 선택 버튼 6개 + 아이콘 -->
-    <button class="doc-btn" onclick="selectDoc('1984583920084')">
-      <svg fill="#2563eb"><circle cx="8" cy="8" r="7"/></svg>
+    <!-- ProxySG -->
+    <button class="doc-btn" onclick="selectDoc('1984583920084')" data-color="#2563eb">
+      <svg viewBox="0 0 24 24">
+        <rect x="3" y="5" width="18" height="14" rx="2"></rect>
+        <circle cx="8" cy="12" r="2.4"></circle>
+      </svg>
       ProxySG
     </button>
-
-    <button class="doc-btn" onclick="selectDoc('1782202017240')">
-      <svg fill="#10b981"><rect x="2" y="2" width="12" height="12" rx="3"/></svg>
-      CA/MA
+    
+    <!-- CAS/MA -->
+    <button class="doc-btn" onclick="selectDoc('1782202017240')" data-color="#10b981">
+      <svg viewBox="0 0 24 24">
+        <path d="M4 4h8l4 4v12H4z"></path>
+        <circle cx="14" cy="10" r="2.2"></circle>
+      </svg>
+      CA / MA
     </button>
-
-    <button class="doc-btn" onclick="selectDoc('1761064867057')">
-      <svg fill="#8b5cf6"><polygon points="8,1 15,15 1,15"/></svg>
-      Management Center (MC)
+    
+    <!-- MC -->
+    <button class="doc-btn" onclick="selectDoc('1761064867057')" data-color="#8b5cf6">
+      <svg viewBox="0 0 24 24">
+        <circle cx="12" cy="12" r="3"></circle>
+        <path d="M12 2v3M12 19v3M4 12h3M17 12h3M5 5l2 2M17 17l2 2M5 19l2-2M17 7l2-2"/>
+      </svg>
+      Management Center
     </button>
-
-    <button class="doc-btn" onclick="selectDoc('1762093086557')">
-      <svg fill="#f59e0b"><circle cx="8" cy="8" r="7"/></svg>
+    
+    <!-- Reporter -->
+    <button class="doc-btn" onclick="selectDoc('1762093086557')" data-color="#f59e0b">
+      <svg viewBox="0 0 24 24">
+        <rect x="4" y="10" width="3" height="8" rx="1"></rect>
+        <rect x="10" y="6" width="3" height="12" rx="1"></rect>
+        <rect x="16" y="4" width="3" height="14" rx="1"></rect>
+      </svg>
       Reporter
     </button>
-
-    <button class="doc-btn" onclick="selectDoc('1841914259813')">
-      <svg fill="#3b82f6"><rect x="3" y="3" width="10" height="10" rx="2"/></svg>
-      Hardware SSLV
+    
+    <!-- SSLV H/W -->
+    <button class="doc-btn" onclick="selectDoc('1841914259813')" data-color="#3b82f6">
+      <svg viewBox="0 0 24 24">
+        <path d="M6 10V7a6 6 0 1112 0v3"></path>
+        <rect x="6" y="10" width="12" height="10" rx="2"></rect>
+      </svg>
+      SSLV Hardware
+    </button>
+    
+    <!-- SSLV S/W -->
+    <button class="doc-btn" onclick="selectDoc('1532624862427')" data-color="#60a5fa">
+      <svg viewBox="0 0 24 24">
+        <path d="M12 2a6 6 0 016 6v2"></path>
+        <rect x="6" y="10" width="12" height="10" rx="2"></rect>
+        <path d="M9 14h6"></path>
+      </svg>
+      SSLV Software
+    </button>
+    
+    <!-- PacketShaper H/W -->
+    <button class="doc-btn" onclick="selectDoc('897029641901')" data-color="#0ea5e9">
+      <svg viewBox="0 0 24 24">
+        <path d="M3 15c3-6 6 6 9 0s6 6 9 0" stroke-width="2" fill="none"></path>
+      </svg>
+      PacketShaper H/W
+    </button>
+    
+    <!-- PacketShaper S/W -->
+    <button class="doc-btn" onclick="selectDoc('874655704489')" data-color="#38bdf8">
+      <svg viewBox="0 0 24 24">
+        <path d="M3 14c3-4 6 4 9 0s6 4 9 0" stroke-width="2" fill="none"></path>
+      </svg>
+      PacketShaper S/W
     </button>
 
-    <button class="doc-btn" onclick="selectDoc('1532624862427')">
-      <svg fill="#60a5fa"><path d="M2 8h12"/></svg>
-      Software SSLV
-    </button>
+
 
     <label>uniqueFileId</label>
     <input id="uniqueId" placeholder="uniqueFileId 입력">
@@ -361,19 +436,30 @@ const iframeMap = {
   "1761064867057": "https://knowledge.broadcom.com/external/article/151106/end-of-life-for-management-center-and-re.html",
   "1762093086557": "https://knowledge.broadcom.com/external/article/386552/end-of-life-for-reporter.html",
   "1841914259813": "https://knowledge.broadcom.com/external/article/233783/end-of-life-and-product-lifecycle-for-ss.html",
-  "1532624862427": "https://knowledge.broadcom.com/external/article/233783/end-of-life-and-product-lifecycle-for-ss.html"
+  "1532624862427": "https://knowledge.broadcom.com/external/article/233783/end-of-life-and-product-lifecycle-for-ss.html",
+  "897029641901": "https://knowledge.broadcom.com/external/article/151110/packetshaper-endoflife-documents.html",
+  "874655704489": "https://knowledge.broadcom.com/external/article/151110/packetshaper-endoflife-documents.html",
 };
 
 /* -------- 문서 선택 버튼 클릭 -------- */
 function selectDoc(id) {
+
   document.getElementById("uniqueId").value = id;
 
-  // 버튼 active 적용
-  document.querySelectorAll(".doc-btn").forEach(btn => btn.classList.remove("active"));
-  event.target.classList.add("active");
+  document.querySelectorAll(".doc-btn").forEach(btn => {
+    btn.classList.remove("active");
+  });
+
+  const clicked = event.currentTarget;
+  clicked.classList.add("active");
+
+  // 선택된 버튼의 컬러 속성 읽어서 적용
+  const color = clicked.getAttribute("data-color");
+  clicked.style.setProperty("--btn-color", color);
 
   loadDoc(id);
 }
+
 
 /* -------- iframe 로딩 -------- */
 function loadDoc(id) {
