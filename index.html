@@ -11,6 +11,9 @@
 <title>EoS 문서 뷰어 & 다운로드</title>
 
 <style>
+  a {
+      text-decoration: none !important;
+    }
   body {
         font-family: "Segoe UI", Arial, sans-serif;
         background: #f3f4f6;
@@ -31,6 +34,10 @@
     gap: 4px;
     margin-bottom: -10px;
   }
+	.nav-right {
+      display: flex;
+      gap: 4px;
+    }
 
   .nav-btn {
     background: #1e3a5f; color: white; border: none; border-radius: 8px;
@@ -307,14 +314,20 @@
 
 <div class="header-wrap">
 	<div class="top-nav">
-    <a href="https://etech-symantec.github.io/eos" class="nav-btn">⏳ EoS 확인</a>
-	<a href="https://etech-symantec.github.io/sysinfo" class="nav-btn">🧩 Sysinfo 분석</a>
-    <a href="https://etech-symantec.github.io/isg" class="nav-btn">🔎 ISG 분석</a>
-    <a href="https://etech-symantec.github.io/trace" class="nav-btn">📄 Trace 분석</a>
-    <a href="https://etech-symantec.github.io/sizing-sg" class="nav-btn">📊 Sizing-SG 보기</a>
-    <a href="https://etech-symantec.github.io/elk" class="nav-btn">🧬 ELK 로그 설정</a>
-    <a href="https://etech-symantec.github.io/" class="nav-btn-soon">🚦 PAC</a>
-	</div>
+        <div class="nav-left">
+            <a href="https://etech-symantec.github.io/" class="home-btn">🪟</a>
+        </div>
+    
+        <div class="nav-right">
+            <a href="https://etech-symantec.github.io/eos" class="nav-btn">⏳ EoS 확인</a>
+            <a href="https://etech-symantec.github.io/sysinfo" class="nav-btn">🧩 Sysinfo 분석</a>
+            <a href="https://etech-symantec.github.io/isg" class="nav-btn">🔎 ISG 분석</a>
+            <a href="https://etech-symantec.github.io/trace" class="nav-btn">📄 Trace 분석</a>
+            <a href="https://etech-symantec.github.io/sizing-sg" class="nav-btn">📊 Sizing-SG 보기</a>
+            <a href="https://etech-symantec.github.io/elk" class="nav-btn">🧬 ELK 로그 설정</a>
+            <a href="https://etech-symantec.github.io/pac" class="nav-btn-soon">🚦 PAC</a>
+        </div>
+    </div>
 		
 	<h1 class="dongle-regular">
 	  <div class="title-left">
