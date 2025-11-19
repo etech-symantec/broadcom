@@ -319,7 +319,11 @@
         </div>
     
         <div class="nav-right">
-            <a href="https://etech-symantec.github.io/eos" class="nav-btn">⏳ EoS 확인</a>
+            <a href="https://etech-symantec.github.io/broadcom" class="nav-btn">
+	          <img src="https://support.broadcom.com/o/ecx-standard-theme/images/favicon.ico"
+	               style="width:14px;height:14px;margin-right:2px;margin-bottom:3px;vertical-align:middle;">
+	          Broadcom 링크
+	        </a>
             <a href="https://etech-symantec.github.io/sysinfo" class="nav-btn">🧩 Sysinfo 분석</a>
             <a href="https://etech-symantec.github.io/isg" class="nav-btn">🔎 ISG 분석</a>
             <a href="https://etech-symantec.github.io/trace" class="nav-btn">📄 Trace 분석</a>
@@ -335,7 +339,7 @@
 	    <span class="subtitle">by 이테크시스템</span>
 	  </div>
 	  <div class="date-container">
-	    <div class="version">ver.2025.11.17.01</div><p>
+	    <div class="version">ver.2025.11.19.01</div><p>
 	  </div>
 	</h1>
 </div>
@@ -348,7 +352,7 @@
     <h4>📥 장비 선택</h4>
 
     <!-- ProxySG -->
-    <button class="doc-btn" onclick="selectDoc('1984583920084')" data-color="#2563eb">
+    <button class="doc-btn" onclick="selectDoc('1984583920084', this)" data-color="#2563eb">
       <svg viewBox="0 0 24 24">
         <rect x="3" y="5" width="18" height="14" rx="2"></rect>
         <circle cx="8" cy="12" r="2.4"></circle>
@@ -357,7 +361,7 @@
     </button>
     
     <!-- CAS/MA -->
-    <button class="doc-btn" onclick="selectDoc('1782202017240')" data-color="#10b981">
+    <button class="doc-btn" onclick="selectDoc('1782202017240', this)" data-color="#10b981">
       <svg viewBox="0 0 24 24">
         <path d="M4 4h8l4 4v12H4z"></path>
         <circle cx="14" cy="10" r="2.2"></circle>
@@ -366,7 +370,7 @@
     </button>
     
     <!-- MC -->
-    <button class="doc-btn" onclick="selectDoc('1761064867057')" data-color="#8b5cf6">
+    <button class="doc-btn" onclick="selectDoc('1761064867057', this)" data-color="#8b5cf6">
       <svg viewBox="0 0 24 24">
         <circle cx="12" cy="12" r="3"></circle>
         <path d="M12 2v3M12 19v3M4 12h3M17 12h3M5 5l2 2M17 17l2 2M5 19l2-2M17 7l2-2"/>
@@ -375,7 +379,7 @@
     </button>
     
     <!-- Reporter -->
-    <button class="doc-btn" onclick="selectDoc('1762093086557')" data-color="#f59e0b">
+    <button class="doc-btn" onclick="selectDoc('1762093086557', this)" data-color="#f59e0b">
       <svg viewBox="0 0 24 24">
         <rect x="4" y="10" width="3" height="8" rx="1"></rect>
         <rect x="10" y="6" width="3" height="12" rx="1"></rect>
@@ -385,7 +389,7 @@
     </button>
     
     <!-- SSLV H/W -->
-    <button class="doc-btn" onclick="selectDoc('1841914259813')" data-color="#3b82f6">
+    <button class="doc-btn" onclick="selectDoc('1841914259813', this)" data-color="#3b82f6">
       <svg viewBox="0 0 24 24">
         <path d="M6 10V7a6 6 0 1112 0v3"></path>
         <rect x="6" y="10" width="12" height="10" rx="2"></rect>
@@ -394,7 +398,7 @@
     </button>
     
     <!-- SSLV S/W -->
-    <button class="doc-btn" onclick="selectDoc('1532624862427')" data-color="#60a5fa">
+    <button class="doc-btn" onclick="selectDoc('1532624862427', this)" data-color="#60a5fa">
       <svg viewBox="0 0 24 24">
         <path d="M12 2a6 6 0 016 6v2"></path>
         <rect x="6" y="10" width="12" height="10" rx="2"></rect>
@@ -404,7 +408,7 @@
     </button>
     
     <!-- PacketShaper H/W -->
-    <button class="doc-btn" onclick="selectDoc('897029641901')" data-color="#0ea5e9">
+    <button class="doc-btn" onclick="selectDoc('897029641901', this)" data-color="#0ea5e9">
       <svg viewBox="0 0 24 24">
         <path d="M3 15c3-6 6 6 9 0s6 6 9 0" stroke-width="2" fill="none"></path>
       </svg>
@@ -412,22 +416,16 @@
     </button>
     
     <!-- PacketShaper S/W -->
-    <button class="doc-btn" onclick="selectDoc('874655704489')" data-color="#38bdf8">
+    <button class="doc-btn" onclick="selectDoc('874655704489', this)" data-color="#38bdf8">
       <svg viewBox="0 0 24 24">
         <path d="M3 14c3-4 6 4 9 0s6 4 9 0" stroke-width="2" fill="none"></path>
       </svg>
       PacketShaper S/W
     </button>
 
+    <!-- 서브메뉴는 JS에서 동적으로 여기 아래에 삽입됨 -->
 
-
-    <label>uniqueFileId</label>
-    <input id="uniqueId" placeholder="uniqueFileId 입력">
-
-    <button class="download-btn" onclick="downloadAttachment()">EoL 문서 다운로드</button>
   </div>
-
-
 
   <!-- 우측 iframe 영역 -->
   <div class="right-card">
@@ -437,7 +435,7 @@
     </div>
 
     <div class="iframe-wrapper">
-      <div id="placeholder" class="placeholder">확인할 문서를 선택하세요.</div>
+      <div id="placeholder" class="placeholder">확인할 문서를 선택한 후, <br>EoS 문서를 클릭해 주세요.</div>
       <div class="loader" id="loader"></div>
       <iframe id="kbFrame"></iframe>
     </div>
@@ -445,10 +443,8 @@
 
 </div>
 
-
-
 <script>
-/* iframe URL 매핑 */
+/* EoS iframe URL 매핑 */
 const iframeMap = {
   "1984583920084": "https://knowledge.broadcom.com/external/article/151102/end-of-life-and-product-lifecycle-for-pr.html",
   "1782202017240": "https://knowledge.broadcom.com/external/article/151099/endoflife-information-for-content-analys.html",
@@ -457,35 +453,149 @@ const iframeMap = {
   "1841914259813": "https://knowledge.broadcom.com/external/article/233783/end-of-life-and-product-lifecycle-for-ss.html",
   "1532624862427": "https://knowledge.broadcom.com/external/article/233783/end-of-life-and-product-lifecycle-for-ss.html",
   "897029641901": "https://knowledge.broadcom.com/external/article/151110/packetshaper-endoflife-documents.html",
-  "874655704489": "https://knowledge.broadcom.com/external/article/151110/packetshaper-endoflife-documents.html",
+  "874655704489": "https://knowledge.broadcom.com/external/article/151110/packetshaper-endoflife-documents.html"
 };
 
-/* -------- 문서 선택 버튼 클릭 -------- */
-function selectDoc(id) {
+/* 장비별 컬러 + 링크 매핑 */
+const deviceConfig = {
+  "1984583920084": { // ProxySG / ISG
+    color: "#2563eb",
+    release:  "https://techdocs.broadcom.com/us/en/symantec-security-software/web-and-network-security/edge-swg/7-3/what-s-new-in-proxysg-7-3/features-listed-by-release.html",
+    features: "https://techdocs.broadcom.com/us/en/symantec-security-software/web-and-network-security/edge-swg/7-3/what-s-new-in-proxysg-7-3/features-summary-table.html",
+    downloads:"https://support.broadcom.com/group/ecx/productdownloads?subfamily=ISG+Proxy&tab=Products"
+  },
+  "1782202017240": { color: "#10b981" },          // CAS/MA
+  "1761064867057": { color: "#8b5cf6" },          // MC
+  "1762093086557": { color: "#f59e0b" },          // Reporter
+  "1841914259813": { color: "#3b82f6" },          // SSLV HW
+  "1532624862427": { color: "#60a5fa" },          // SSLV SW
+  "897029641901": { color: "#0ea5e9" },           // PacketShaper HW
+  "874655704489": { color: "#38bdf8" }            // PacketShaper SW
+};
 
-  document.getElementById("uniqueId").value = id;
+let currentEosId = null;
 
-  document.querySelectorAll(".doc-btn").forEach(btn => {
-    btn.classList.remove("active");
+/* 장비 버튼 클릭 */
+function selectDoc(id, btnElem) {
+  // 기존 active 제거
+  document.querySelectorAll(".doc-btn").forEach(b => {
+    b.classList.remove("active");
   });
 
-  const clicked = event.currentTarget;
-  clicked.classList.add("active");
+  // 선택 버튼 active + 색상 반영
+  const cfg = deviceConfig[id] || {};
+  const color = cfg.color || btnElem.getAttribute("data-color") || "#2563eb";
+  btnElem.classList.add("active");
+  btnElem.style.setProperty("--btn-color", color);
 
-  // 선택된 버튼의 컬러 속성 읽어서 적용
-  const color = clicked.getAttribute("data-color");
-  clicked.style.setProperty("--btn-color", color);
+  // 기존 서브메뉴 제거
+  document.querySelectorAll(".submenu-container").forEach(el => el.remove());
 
-  loadDoc(id);
+  // 서브메뉴 생성
+  const submenu = document.createElement("div");
+  submenu.className = "submenu-container";
+
+  // ProxySG / 나머지 공통 서브메뉴
+  submenu.innerHTML = `
+    <div class="submenu-row">
+      <button class="submenu-btn submenu-btn-main submenu-eos">
+        <span>⭐ EoS 문서</span>
+      </button>
+      <button class="submenu-btn submenu-btn-pdf submenu-pdf">
+        <span>PDF</span>
+      </button>
+    </div>
+    <div class="submenu-link-row">
+      <button class="submenu-btn submenu-link submenu-release">
+        <span class="submenu-link-label">
+          <span class="submenu-link-text">Release Notes</span>
+          <span class="submenu-link-icon-wrap">
+            <svg class="submenu-link-icon" viewBox="0 0 16 16">
+              <path d="M5 11L11 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+              <path d="M7 5H11V9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </span>
+        </span>
+      </button>
+      <button class="submenu-btn submenu-link submenu-features">
+        <span class="submenu-link-label">
+          <span class="submenu-link-text">Features Summary</span>
+          <span class="submenu-link-icon-wrap">
+            <svg class="submenu-link-icon" viewBox="0 0 16 16">
+              <path d="M5 11L11 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+              <path d="M7 5H11V9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </span>
+        </span>
+      </button>
+      <button class="submenu-btn submenu-link submenu-downloads">
+        <span class="submenu-link-label">
+          <span class="submenu-link-text">Downloads</span>
+          <span class="submenu-link-icon-wrap">
+            <svg class="submenu-link-icon" viewBox="0 0 16 16">
+              <path d="M5 11L11 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+              <path d="M7 5H11V9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </span>
+        </span>
+      </button>
+    </div>
+  `;
+
+  // 색상/스타일 보정
+  submenu.style.borderColor = color;
+  submenu.style.boxShadow = `0 0 0 1px ${hexWithAlpha(color, 0.20)}`;
+
+  const eosBtn = submenu.querySelector(".submenu-eos");
+  eosBtn.style.backgroundColor = color;
+  eosBtn.style.color = "#fff";
+
+  // ProxySG 외에는 Release/Features/Downloads가 아직 없을 수 있으니 안내
+  const releaseBtn   = submenu.querySelector(".submenu-release");
+  const featuresBtn  = submenu.querySelector(".submenu-features");
+  const downloadsBtn = submenu.querySelector(".submenu-downloads");
+
+  // 장비 버튼 바로 아래에 삽입
+  btnElem.insertAdjacentElement("afterend", submenu);
+
+  // 슬라이드 애니메이션
+  requestAnimationFrame(() => submenu.classList.add("open"));
+
+  // EoS 문서 버튼 → iframe 로딩
+  eosBtn.addEventListener("click", () => {
+    loadDoc(id);
+  });
+
+  // PDF 다운로드
+  const pdfBtn = submenu.querySelector(".submenu-pdf");
+  pdfBtn.addEventListener("click", () => {
+    downloadAttachment(id);
+  });
+
+  // 링크 버튼 처리
+  releaseBtn.addEventListener("click", () => openDocLink(id, "release"));
+  featuresBtn.addEventListener("click", () => openDocLink(id, "features"));
+  downloadsBtn.addEventListener("click", () => openDocLink(id, "downloads"));
 }
 
+/* HEX + alpha 헬퍼 */
+function hexWithAlpha(hex, alpha) {
+  const _hex = hex.replace("#", "");
+  if (_hex.length !== 6) return hex;
+  const r = parseInt(_hex.slice(0,2),16);
+  const g = parseInt(_hex.slice(2,4),16);
+  const b = parseInt(_hex.slice(4,6),16);
+  return `rgba(${r},${g},${b},${alpha})`;
+}
 
-/* -------- iframe 로딩 -------- */
+/* iframe 로딩 */
 function loadDoc(id) {
   const iframe = document.getElementById("kbFrame");
   const loader = document.getElementById("loader");
   const placeholder = document.getElementById("placeholder");
   const linkBtn = document.getElementById("kbLinkBtn");
+
+  currentEosId = id;
 
   if (!id || !iframeMap[id]) {
     iframe.style.display = "none";
@@ -509,16 +619,30 @@ document.getElementById("kbFrame").addEventListener("load", () => {
   document.getElementById("kbFrame").style.display = "block";
 });
 
-/* 원본 페이지 */
+/* 원본 KB 페이지 새창 */
 function openKB() {
-  const id = document.getElementById("uniqueId").value.trim();
-  if (iframeMap[id]) window.open(iframeMap[id], "_blank");
+  if (!currentEosId || !iframeMap[currentEosId]) return;
+  window.open(iframeMap[currentEosId], "_blank");
 }
 
-/* 다운로드 */
-function downloadAttachment() {
-  const id = document.getElementById("uniqueId").value.trim();
-  if (!id) return alert("uniqueFileId를 입력하세요.");
+/* Release / Features / Downloads 새창 */
+function openDocLink(id, type) {
+  const cfg = deviceConfig[id] || {};
+  const url = cfg[type];
+
+  if (!url) {
+    alert("해당 장비의 " + type + " 링크는 아직 지정되지 않았습니다.");
+    return;
+  }
+  window.open(url, "_blank");
+}
+
+/* EoS PDF 다운로드 */
+function downloadAttachment(uniqueId) {
+  if (!uniqueId) {
+    alert("uniqueFileId가 없습니다.");
+    return;
+  }
 
   const apiUrl =
     "https://api-broadcomcms-software.wolkenservicedesk.com/es/attachments/download_attachment?domain=broadcomcms-software.wolkenservicedesk.com";
@@ -531,7 +655,7 @@ function downloadAttachment() {
   const hidden = document.createElement("input");
   hidden.type = "hidden";
   hidden.name = "data";
-  hidden.value = JSON.stringify({ uniqueFileId: id });
+  hidden.value = JSON.stringify({ uniqueFileId: uniqueId });
 
   form.appendChild(hidden);
   document.body.appendChild(form);
