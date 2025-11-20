@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
+<link rel="stylesheet" href="https://etech-symantec.github.io/style.css" />
 <meta charset="UTF-8">
 
 <!-- Dongle 폰트 + 기본 스타일 유지 -->
@@ -11,108 +12,6 @@
 <title>브로드컴 문서 뷰어 & 다운로드</title>
 
 <style>
-  a {
-    text-decoration: none !important;
-  }
-  body {
-    font-family: "Segoe UI", Arial, sans-serif;
-    background: #f3f4f6;
-    margin: 0;
-    padding: 6px 40px 10px 40px;
-    color:#333;
-  }
-  .dongle-regular {
-    font-family: "Dongle", sans-serif;
-    font-weight: 400;
-    font-style: normal;
-  }
-
-  /* 🔹 상단 네비게이션 버튼 */
-  .top-nav {
-    display: flex;
-    justify-content: space-between;  /* 좌측-우측 배치 */
-    gap: 4px;
-    margin-bottom: -10px;
-  }
-  .nav-right {
-    display: flex;
-    gap: 4px;
-  }
-
-  .nav-btn {
-    background: #1e3a5f; color: white; border: none; border-radius: 8px;
-    padding: 4px 8px; height: 12px; line-height: 10px;
-    cursor: pointer; font-weight: 400; font-size: 0.75rem;
-    text-decoration: none; transition: background 0.2s;
-  }
-  .nav-btn-soon {
-    background: #98A1BC; color: #555879; border: none; border-radius: 8px;
-    padding: 4px 8px; height: 12px; line-height: 10px;
-    cursor: pointer; font-weight: 400; font-size: 0.75rem;
-    text-decoration: none; transition: background 0.2s;
-  }
-
-  .nav-btn:hover {
-    background: linear-gradient(135deg, #FF0066, #0046FF);
-  }
-
-  /* ---------- 헤더 ---------- */
-  .header-wrap {
-    position: sticky;
-    top: 0;
-    z-index: 10;
-    background: #f3f4f6;
-  }
-  h1 {
-    font-size: 1.5em;
-    background: #1e3a5f;
-    color: white;
-    padding: 12px 18px;
-    border-radius: 8px;
-    display: flex;
-    justify-content: space-between;  /* 좌우 배치 */
-    align-items: flex-end;            /* 아래 정렬 */
-    margin-bottom: 5pt;
-  }
-  .header-wrap {
-    position: sticky;
-    top: 0;
-    z-index: 1000;
-    background: #f3f4f6;
-    transition: all 0.25s ease;
-  }
-
-  .title-left {
-    font-size: 1.6em;
-    line-height: 0.7;
-    margin-bottom: 0;
-  }
-
-  .subtitle {
-    font-size: 0.7em;
-    font-weight: normal;
-    color: #bcd0f7;
-    opacity: 0.9;
-    margin-top: 2px;
-    display: block;
-  }
-  
-  .date-container {
-    text-align: right;
-    line-height: 1.2;
-  }
-
-  .version {
-    font-size: 24px;
-    color: #bcd0f7;
-    opacity: 0.9;
-  }
-  .date-header {
-    font-size: 20px;
-    color: #fff;
-    margin: 0;
-  }
-
   /* ---------- 전체 2단 레이아웃 ---------- */
   .layout {
     display: flex;
