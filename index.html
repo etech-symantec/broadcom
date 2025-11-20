@@ -191,7 +191,7 @@
   
   .submenu-pdf-sw {
       flex: 1;
-      min-width: 30%;     /* 두 개를 한 row에 고정 */
+      min-width: 20%;     /* 두 개를 한 row에 고정 */
       max-width: 50%;
       padding: 6px 6px;   /* 가로 패딩 줄임 */
       font-size: 0.67rem; /* 글자 크기 감소 */
@@ -599,9 +599,9 @@ function selectDoc(deviceId, btnElem) {
   // PDF 버튼 설정
   if (cfg.pdfHw && cfg.pdfSw) {
     // SSLV / PacketShaper : H/W, S/W 두 개로 분리
-    pdfBtn.textContent = "PDF H/W";
+    pdfBtn.textContent = "H/W";
     const pdfBtnSw = pdfBtn.cloneNode(true);
-    pdfBtnSw.textContent = "PDF S/W";
+    pdfBtnSw.textContent = "S/W";
     pdfBtnSw.classList.add("submenu-pdf-sw");
     row.appendChild(pdfBtnSw);
 
