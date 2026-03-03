@@ -626,7 +626,7 @@ function selectDoc(deviceId, btnElem) {
         alert("이 장비의 EoS PDF ID가 설정되지 않았습니다.");
         return;
       }
-      downloadAttachment(cfg.eosFileId);
+      viewPDF(cfg.eosFileId); // 다운로드 대신 뷰어 함수 호출
     });
   }
 
