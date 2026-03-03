@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🌠%3C/text%3E%3C/svg%3E">
 <link rel="stylesheet" href="https://etech-symantec.github.io/style.css" />
 <meta charset="UTF-8">
 
@@ -612,10 +613,10 @@ function selectDoc(deviceId, btnElem) {
     row.appendChild(pdfBtnSw);
 
     pdfBtn.addEventListener("click", () => {
-      downloadAttachment(cfg.pdfHw);
+      viewPDF(cfg.pdfHw); // 다운로드 대신 뷰어 함수 호출
     });
     pdfBtnSw.addEventListener("click", () => {
-      downloadAttachment(cfg.pdfSw);
+      viewPDF(cfg.pdfSw); // 다운로드 대신 뷰어 함수 호출
     });
   } else {
     // 나머지 장비 : 기본 EoS PDF 하나
@@ -748,42 +749,60 @@ function openDocLink(deviceId, type) {
   window.open(url, "_blank");
 }
 
-/* EoS PDF 다운로드 */
-function downloadAttachment(uniqueId) {
+/* PDF 메모리 다운로드 및 iframe 표시 (새로 추가된 함수) */
+function viewPDF(uniqueId) {
   if (!uniqueId) {
     alert("uniqueFileId가 없습니다.");
     return;
   }
 
+  const iframe = document.getElementById("kbFrame");
+  const loader = document.getElementById("loader");
+  const placeholder = document.getElementById("placeholder");
+  const linkBtn = document.getElementById("kbLinkBtn");
+
+  // UI 초기화 (로딩 표시)
+  placeholder.style.display = "none";
+  iframe.style.display = "none";
+  loader.style.display = "block";
+  linkBtn.disabled = true; // PDF는 로컬 임시 URL이므로 원본 링크 버튼 비활성화
+
   const apiUrl =
     "https://api-broadcomcms-software.wolkenservicedesk.com/es/attachments/download_attachment?domain=broadcomcms-software.wolkenservicedesk.com";
 
-  // 기존 form 방식 제거하고 fetch + Blob 사용
+  // POST 요청을 위한 폼 데이터 구성
+  const formData = new URLSearchParams();
+  formData.append("data", JSON.stringify({ uniqueFileId: uniqueId }));
+
+  // Fetch API로 파일 데이터 가져오기
   fetch(apiUrl, {
-    method: "POST",
+    method: 'POST',
     headers: {
-      "Content-Type": "application/json"
+      'Content-Type': 'application/x-www-form-urlencoded'
     },
-    body: JSON.stringify({ data: JSON.stringify({ uniqueFileId: uniqueId }) })
+    body: formData.toString()
   })
-    .then(res => {
-      if (!res.ok) {
-        throw new Error("파일을 가져오는데 실패했습니다. (" + res.status + ")");
+    .then(response => {
+      if (!response.ok) {
+        throw new Error("PDF 문서를 가져오는 데 실패했습니다.");
       }
-      return res.blob();
+      return response.blob(); // 응답 데이터를 Blob(바이너리) 형태로 변환
     })
     .then(blob => {
-      // PDF Blob → blob URL 생성 후 새 탭에 오픈
-      const url = URL.createObjectURL(blob);
-      // 새 탭/창으로 열기
-      window.open(url, "_blank");
+      // Blob을 PDF 타입으로 명시
+      const pdfBlob = new Blob([blob], { type: 'application/pdf' });
+      
+      // 브라우저 메모리에 임시 URL 생성 (로컬 다운로드 아님)
+      const fileURL = URL.createObjectURL(pdfBlob);
 
-      // 메모리 회수용 (너무 빨리 revoke 하면 일부 브라우저에서 표시 실패할 수 있어 약간 지연)
-      setTimeout(() => URL.revokeObjectURL(url), 60 * 1000);
+      // iframe에 생성한 임시 URL을 연결하여 화면에 표시
+      iframe.src = fileURL;
     })
-    .catch(err => {
-      console.error(err);
-      alert("PDF를 표시하는 중 오류가 발생했습니다.");
+    .catch(error => {
+      console.error("PDF 로드 에러:", error);
+      alert("PDF를 불러오는 중 오류가 발생했습니다. (CORS 또는 권한 문제일 수 있습니다.)");
+      loader.style.display = "none";
+      placeholder.style.display = "block";
     });
 }
 </script>
