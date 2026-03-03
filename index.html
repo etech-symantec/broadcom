@@ -434,7 +434,7 @@ const deviceConfig = {
     color: "#10b981",
     eosUrl:
       "https://knowledge.broadcom.com/external/article/151099/endoflife-information-for-content-analys.html",
-    eosFileId: "1782202017240",
+    eosFileId: "2129443568723",
     release:
       "https://techdocs.broadcom.com/us/en/symantec-security-software/web-and-network-security/content-analysis/3-2/rn-cas-3-2-x-intro1.html",
     features:
@@ -450,7 +450,7 @@ const deviceConfig = {
     color: "#8b5cf6",
     eosUrl:
       "https://knowledge.broadcom.com/external/article/151106/end-of-life-for-management-center-and-re.html",
-    eosFileId: "1761064867057",
+    eosFileId: "2053418003639",
     release:
       "https://techdocs.broadcom.com/us/en/symantec-security-software/web-and-network-security/management-center/4-1/pdf_first.html",
     features:
@@ -482,7 +482,7 @@ const deviceConfig = {
     color: "#016B61",
     eosUrl:
       "https://knowledge.broadcom.com/external/article/233783/end-of-life-and-product-lifecycle-for-ss.html",
-    pdfHw: "2048870679775",   // H/W EoL PDF
+    pdfHw: "2125613821255",   // H/W EoL PDF
     pdfSw: "1532624862427",   // S/W EoL PDF
     release:
       "https://techdocs.broadcom.com/us/en/symantec-security-software/web-and-network-security/ssl-visibility/6-1/6x-release-notes.html",
@@ -613,10 +613,10 @@ function selectDoc(deviceId, btnElem) {
     row.appendChild(pdfBtnSw);
 
     pdfBtn.addEventListener("click", () => {
-      downloadAttachment(cfg.pdfHw);
+      viewPDF(cfg.pdfHw); // 다운로드 대신 뷰어 함수 호출
     });
     pdfBtnSw.addEventListener("click", () => {
-      downloadAttachment(cfg.pdfSw);
+      viewPDF(cfg.pdfSw); // 다운로드 대신 뷰어 함수 호출
     });
   } else {
     // 나머지 장비 : 기본 EoS PDF 하나
@@ -626,7 +626,7 @@ function selectDoc(deviceId, btnElem) {
         alert("이 장비의 EoS PDF ID가 설정되지 않았습니다.");
         return;
       }
-      downloadAttachment(cfg.eosFileId);
+      viewPDF(cfg.eosFileId); // 다운로드 대신 뷰어 함수 호출
     });
   }
 
@@ -749,30 +749,37 @@ function openDocLink(deviceId, type) {
   window.open(url, "_blank");
 }
 
-/* EoS PDF 다운로드 */
-function downloadAttachment(uniqueId) {
-  if (!uniqueId) {
-    alert("uniqueFileId가 없습니다.");
-    return;
-  }
+/* GitHub 내부의 PDF를 가져와서 iframe에 띄우기 */
+function viewPDF(uniqueId) {
+  if (!uniqueId) return;
 
-  const apiUrl =
-    "https://api-broadcomcms-software.wolkenservicedesk.com/es/attachments/download_attachment?domain=broadcomcms-software.wolkenservicedesk.com";
+  const iframe = document.getElementById("kbFrame");
+  const loader = document.getElementById("loader");
+  const placeholder = document.getElementById("placeholder");
+  const linkBtn = document.getElementById("kbLinkBtn");
 
-  const form = document.createElement("form");
-  form.method = "post";
-  form.action = apiUrl;
-  form.target = "_self";
+  placeholder.style.display = "none";
+  iframe.style.display = "none";
+  loader.style.display = "block";
+  linkBtn.disabled = true;
 
-  const hidden = document.createElement("input");
-  hidden.type = "hidden";
-  hidden.name = "data";
-  hidden.value = JSON.stringify({ uniqueFileId: uniqueId });
+  const pdfUrl = `https://raw.githubusercontent.com/etech-symantec/broadcom/main/pdfs/${uniqueId}.pdf`;
 
-  form.appendChild(hidden);
-  document.body.appendChild(form);
-  form.submit();
-  form.remove();
+  fetch(pdfUrl)
+    .then(response => {
+      if (!response.ok) throw new Error("PDF 문서를 찾을 수 없습니다.");
+      return response.blob();
+    })
+    .then(blob => {
+      const fileURL = URL.createObjectURL(new Blob([blob], { type: 'application/pdf' }));
+      iframe.src = fileURL;
+    })
+    .catch(error => {
+      console.error("PDF 로드 에러:", error);
+      alert("PDF를 불러오는 중 오류가 발생했습니다.");
+      loader.style.display = "none";
+      placeholder.style.display = "block";
+    });
 }
 </script>
 
