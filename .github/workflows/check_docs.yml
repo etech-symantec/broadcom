@@ -2,7 +2,9 @@ name: Check Broadcom TechDocs Update
 
 on:
   schedule:
-    - cron: '0 0 * * *' # 매일 한국 시간 오전 9시 실행
+    # 한국 시간(KST) 기준: 09:00, 12:00, 15:00 (3시간 간격)
+    # UTC 기준: 00:00, 03:00, 06:00
+    - cron: '0 0,3,6 * * *'
   workflow_dispatch:
 
 jobs:
