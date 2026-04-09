@@ -25,8 +25,9 @@ jobs:
           JANDI_WEBHOOK_URL: ${{ secrets.JANDI_WEBHOOK_URL }}
         run: python check_update.py
 
+      # 알림(UPDATE_FOUND)과 상관없이, 파일이 변경(STATE_CHANGED)되었으면 커밋
       - name: Commit and push updated state
-        if: env.UPDATE_FOUND == 'true'
+        if: env.STATE_CHANGED == 'true'
         run: |
           git config --global user.name 'github-actions[bot]'
           git config --global user.email 'github-actions[bot]@users.noreply.github.com'
