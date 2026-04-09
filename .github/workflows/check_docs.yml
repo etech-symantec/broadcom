@@ -1,0 +1,39 @@
+name: Check Broadcom TechDocs Update
+
+on:
+  schedule:
+    - cron: '0 0 * * *' # 매일 UTC 자정(한국 시간 오전 9시)에 실행
+  workflow_dispatch: # GitHub 웹에서 수동으로 실행할 수 있는 버튼 활성화
+
+jobs:
+  check-update:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Run check script
+        run: python check_update.py
+
+      - name: Create Issue on Update
+        if: env.UPDATE_FOUND == 'true'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh issue create \
+            --title "Broadcom ISG 2.5 문서 업데이트 알림" \
+            --body "문서가 업데이트되었습니다. 새로운 날짜: **${{ env.NEW_DATE }}**"
+
+      - name: Commit and push updated date
+        if: env.UPDATE_FOUND == 'true'
+        run: |
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+          git add last_updated.txt
+          git commit -m "Update last_updated.txt to ${{ env.NEW_DATE }}"
+          git push
