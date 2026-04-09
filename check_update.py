@@ -15,15 +15,26 @@ PAGES = [
 STATE_FILE = "state.json"
 
 def get_last_updated(url):
-    req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
+    # 보안 차단을 피하기 위해 실제 크롬 브라우저처럼 User-Agent 위장
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
+    }
+    req = urllib.request.Request(url, headers=headers)
     try:
         html = urllib.request.urlopen(req).read().decode('utf-8')
         match = re.search(r'Last Updated\s+([A-Za-z]+\s+\d{1,2},\s+\d{4})', html)
-        return match.group(1) if match else "-"
-    except Exception:
+        if match:
+            return match.group(1)
+        else:
+            print("  -> [경고] 페이지 접속은 성공했으나, 'Last Updated' 날짜를 찾을 수 없습니다.")
+            return "-"
+    except Exception as e:
+        print(f"  -> [에러] 페이지 접근 실패: {e}")
         return "-"
 
 def main():
+    print("Broadcom 문서 업데이트 확인 스크립트 실행 시작...\n")
     if os.path.exists(STATE_FILE):
         with open(STATE_FILE, "r") as f:
             state = json.load(f)
@@ -31,35 +42,40 @@ def main():
         state = {}
 
     updates = []
-    state_changed = False # 파일 변경 여부 추적
+    state_changed = False
 
     for page in PAGES:
         name = page["name"]
         url = page["url"]
-        current_date = get_last_updated(url)
         
-        if current_date == "-":
-            continue
+        print(f"[{name}] 페이지 확인 중...")
+        current_date = get_last_updated(url)
+        print(f"  -> 현재 확인된 날짜: {current_date}")
+        
+        previous_date = state.get(name, "없음")
+        print(f"  -> 기존 저장된 날짜: {previous_date}\n")
 
-        previous_date = state.get(name, "-")
-
+        # 기존 날짜와 다르면 무조건 상태 변경 (에러가 나서 "-"로 찍혀도 파일은 무조건 생성하도록)
         if current_date != previous_date:
             state[name] = current_date
-            state_changed = True # 상태가 하나라도 바뀌면 True
+            state_changed = True
             
-            if previous_date != "-":
+            # 알림은 최초 실행이 아니고, 에러("-")가 아닐 때만 발송
+            if previous_date != "없음" and current_date != "-":
                 updates.append({
                     "name": name,
                     "date": current_date,
                     "url": url
                 })
 
-    # 변경된 상태가 있다면 state.json 파일 덮어쓰기
     if state_changed:
+        print("💡 상태가 변경되어 state.json 파일을 생성/저장합니다.")
         with open(STATE_FILE, "w") as f:
             json.dump(state, f, indent=4)
+    else:
+        print("💡 변경사항이 없습니다.")
 
-    # GitHub Actions 환경 변수 설정
+    # 환경변수 기록 (워크플로우에서 커밋 여부를 결정하도록 전달)
     env_file = os.environ.get('GITHUB_ENV')
     if env_file:
         if state_changed:
@@ -70,10 +86,10 @@ def main():
                 f.write("UPDATE_FOUND=true\n")
 
     if not updates:
-        print("새로운 업데이트 알림 대상이 없습니다.")
+        print("\n🔔 새롭게 알림을 보낼 업데이트 내용이 없습니다.")
         return
 
-    print(f"{len(updates)}개의 업데이트 발견!")
+    print(f"\n🔔 {len(updates)}개의 업데이트 알림 발송 중...")
     
     # 1. GitHub Issue 생성
     issue_body = "다음 문서들의 업데이트가 확인되었습니다.\n\n"
@@ -86,8 +102,9 @@ def main():
             "--title", f"Broadcom 문서 업데이트 알림 ({len(updates)}건)", 
             "--body", issue_body
         ], check=True)
+        print("  -> GitHub Issue 생성 완료")
     except Exception as e:
-        print(f"Issue 생성 실패: {e}")
+        print(f"  -> GitHub Issue 생성 실패: {e}")
 
     # 2. 잔디(JANDI) 웹훅 발송
     jandi_url = os.environ.get('JANDI_WEBHOOK_URL')
@@ -113,8 +130,9 @@ def main():
         )
         try:
             urllib.request.urlopen(req)
+            print("  -> 잔디 알림 발송 완료")
         except Exception as e:
-            print(f"잔디 알림 실패: {e}")
+            print(f"  -> 잔디 알림 실패: {e}")
 
 if __name__ == "__main__":
     main()
