@@ -4,7 +4,6 @@ import re
 import os
 import subprocess
 
-# 모니터링할 대상 페이지 목록
 PAGES = [
     {"name": "ISG 2.5", "url": "https://techdocs.broadcom.com/us/en/symantec-security-software/web-and-network-security/integrated-secure-gateway/2-5/25-release-notes/25-whats-new.html"},
     {"name": "Edge SWG 7.3", "url": "https://techdocs.broadcom.com/us/en/symantec-security-software/web-and-network-security/edge-swg/7-3/what-s-new-in-proxysg-7-3/features-summary-table.html"},
@@ -25,7 +24,6 @@ def get_last_updated(url):
         return "-"
 
 def main():
-    # 이전 상태 불러오기
     if os.path.exists(STATE_FILE):
         with open(STATE_FILE, "r") as f:
             state = json.load(f)
@@ -33,6 +31,7 @@ def main():
         state = {}
 
     updates = []
+    state_changed = False # 파일 변경 여부 추적
 
     for page in PAGES:
         name = page["name"]
@@ -44,11 +43,10 @@ def main():
 
         previous_date = state.get(name, "-")
 
-        # 업데이트 여부 확인
         if current_date != previous_date:
             state[name] = current_date
+            state_changed = True # 상태가 하나라도 바뀌면 True
             
-            # 이전 기록이 없는(최초 실행) 경우는 알림을 보내지 않음 (알림 폭탄 방지)
             if previous_date != "-":
                 updates.append({
                     "name": name,
@@ -56,23 +54,27 @@ def main():
                     "url": url
                 })
 
-    # 변경된 상태 저장
-    with open(STATE_FILE, "w") as f:
-        json.dump(state, f, indent=4)
+    # 변경된 상태가 있다면 state.json 파일 덮어쓰기
+    if state_changed:
+        with open(STATE_FILE, "w") as f:
+            json.dump(state, f, indent=4)
 
-    # 업데이트가 없으면 종료
+    # GitHub Actions 환경 변수 설정
+    env_file = os.environ.get('GITHUB_ENV')
+    if env_file:
+        if state_changed:
+            with open(env_file, 'a') as f:
+                f.write("STATE_CHANGED=true\n")
+        if updates:
+            with open(env_file, 'a') as f:
+                f.write("UPDATE_FOUND=true\n")
+
     if not updates:
-        print("새로운 업데이트가 없습니다.")
+        print("새로운 업데이트 알림 대상이 없습니다.")
         return
 
     print(f"{len(updates)}개의 업데이트 발견!")
     
-    # 워크플로우에 업데이트가 있었음을 알림
-    env_file = os.environ.get('GITHUB_ENV')
-    if env_file:
-        with open(env_file, 'a') as f:
-            f.write("UPDATE_FOUND=true\n")
-
     # 1. GitHub Issue 생성
     issue_body = "다음 문서들의 업데이트가 확인되었습니다.\n\n"
     for u in updates:
@@ -84,7 +86,6 @@ def main():
             "--title", f"Broadcom 문서 업데이트 알림 ({len(updates)}건)", 
             "--body", issue_body
         ], check=True)
-        print("GitHub Issue 생성 완료")
     except Exception as e:
         print(f"Issue 생성 실패: {e}")
 
@@ -107,15 +108,11 @@ def main():
         req = urllib.request.Request(
             jandi_url, 
             data=json.dumps(payload).encode('utf-8'), 
-            headers={
-                'Accept': 'application/vnd.tosslab.jandi-v2+json', 
-                'Content-Type': 'application/json'
-            },
+            headers={'Accept': 'application/vnd.tosslab.jandi-v2+json', 'Content-Type': 'application/json'},
             method='POST'
         )
         try:
             urllib.request.urlopen(req)
-            print("잔디 알림 발송 완료")
         except Exception as e:
             print(f"잔디 알림 실패: {e}")
 
