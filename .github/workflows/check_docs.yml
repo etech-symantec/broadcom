@@ -20,43 +20,16 @@ jobs:
           python-version: '3.x'
 
       - name: Run check script
-        run: python check_update.py
-
-      # 1. 업데이트가 있을 때 GitHub Issue 생성
-      - name: Create Issue on Update
-        if: env.UPDATE_FOUND == 'true'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          gh issue create \
-            --title "Broadcom ISG 2.5 문서 업데이트 알림" \
-            --body "문서가 업데이트되었습니다. 새로운 날짜: **${{ env.NEW_DATE }}**"
+          JANDI_WEBHOOK_URL: ${{ secrets.JANDI_WEBHOOK_URL }}
+        run: python check_update.py
 
-      # 2. 업데이트가 있을 때 잔디(JANDI) 웹훅 발송
-      - name: Send Jandi Webhook
-        if: env.UPDATE_FOUND == 'true'
-        run: |
-          curl -X POST "${{ secrets.JANDI_WEBHOOK_URL }}" \
-          -H "Accept: application/vnd.tosslab.jandi-v2+json" \
-          -H "Content-Type: application/json" \
-          -d '{
-            "body": "📢 Broadcom 문서 업데이트 알림",
-            "connectColor": "#00C362",
-            "connectInfo": [
-              {
-                "title": "ISG 2.5 What-s New 페이지 업데이트",
-                "description": "새로운 업데이트 날짜: **'"${{ env.NEW_DATE }}"'**\n아래 링크에서 상세 내용을 확인하세요.",
-                "imageUrl": ""
-              }
-            ]
-          }'
-
-      # 3. 변경된 날짜를 저장소에 기록 (다음 확인을 위해)
-      - name: Commit and push updated date
+      - name: Commit and push updated state
         if: env.UPDATE_FOUND == 'true'
         run: |
           git config --global user.name 'github-actions[bot]'
           git config --global user.email 'github-actions[bot]@users.noreply.github.com'
-          git add last_updated.txt
-          git commit -m "Update last_updated.txt to ${{ env.NEW_DATE }}"
+          git add state.json
+          git commit -m "Update state.json with new dates"
           git push
