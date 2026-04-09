@@ -23,29 +23,43 @@ def get_last_updated(url):
     try:
         html = urllib.request.urlopen(req).read().decode('utf-8')
         
-        # 1. HTML 태그 싹 지우기 (태그 때문에 문장이 끊어지는 현상 완벽 방지)
-        clean_text = re.sub(r'<[^>]+>', ' ', html)
-        # 여러 칸의 띄어쓰기를 한 칸으로 압축
-        clean_text = re.sub(r'\s+', ' ', clean_text)
-        
-        # 2. 'Last Updated' 텍스트 찾기 (콜론이나 띄어쓰기 예외도 모두 허용)
-        match = re.search(r'Last Updated\s*:?\s*([A-Za-z]+\s+\d{1,2},?\s+\d{4})', clean_text, re.IGNORECASE)
-        if match:
-            return match.group(1)
-            
-        # 3. 문서에 따라 'Updated: ' 형태로 적힌 경우도 대비
-        match_alt = re.search(r'Updated\s*:?\s*([A-Za-z]+\s+\d{1,2},?\s+\d{4})', clean_text, re.IGNORECASE)
-        if match_alt:
-            return match_alt.group(1)
-            
-        # 4. 본문에 날짜가 아예 안보인다면, 검색엔진용 메타 태그(meta tag)에서 변경 날짜 찾기
-        meta_match = re.search(r'<meta[^>]+(?:name|property)=["\']?(?:article:modified_time|last-modified|date|updated)["\']?[^>]+content=["\']([^"\']+)["\']', html, re.IGNORECASE)
-        if meta_match:
-            date_str = meta_match.group(1).split('T')[0] # 불필요한 시간 제거 (YYYY-MM-DD 만 남김)
-            print("  -> [안내] 본문 대신 숨겨진 메타 태그에서 날짜를 찾았습니다.")
-            return date_str
+        # 1단계: 검색 엔진 최적화용 메타 태그(Meta tags)에서 숨겨진 날짜 찾기
+        meta_tags = re.findall(r'<meta[^>]+>', html, re.IGNORECASE)
+        for tag in meta_tags:
+            name_m = re.search(r'(?:name|property)=["\']([^"\']+)["\']', tag, re.IGNORECASE)
+            content_m = re.search(r'content=["\']([^"\']+)["\']', tag, re.IGNORECASE)
+            if name_m and content_m:
+                name = name_m.group(1).lower()
+                content = content_m.group(1)
+                # 속성 이름에 날짜와 관련된 단어가 있다면
+                if any(k in name for k in ['date', 'modified', 'updated', 'time']):
+                    date_match = re.search(r'(\d{4}-\d{2}-\d{2})', content)
+                    if date_match:
+                        print(f"  -> [성공] 메타 태그({name})에서 날짜 발견")
+                        return date_match.group(1)
 
-        print("  -> [경고] 태그를 모두 지우고 검사했음에도 날짜 텍스트를 찾을 수 없습니다.")
+        # 2단계: SPA 구조의 내부 JSON 스크립트 데이터에서 날짜 추출
+        json_date = re.search(r'["\'](?:lastModifiedDate|lastModified|updatedAt|dateModified)["\']\s*:\s*["\'](\d{4}-\d{2}-\d{2})', html, re.IGNORECASE)
+        if json_date:
+            print("  -> [성공] 내부 JSON 스크립트에서 날짜 발견")
+            return json_date.group(1)
+
+        # 3단계: 본문 텍스트에서 직접 찾기 (기존 방식)
+        clean_text = re.sub(r'<[^>]+>', ' ', html)
+        clean_text = re.sub(r'\s+', ' ', clean_text)
+        match = re.search(r'(?:Last Updated|Updated|Last modified)\s*:?\s*([A-Za-z]+\s+\d{1,2},?\s+\d{4}|\d{4}-\d{2}-\d{2})', clean_text, re.IGNORECASE)
+        if match:
+            print("  -> [성공] 본문 텍스트에서 직접 날짜 발견")
+            return match.group(1)
+
+        # 4단계: 최후의 수단 - HTML 소스코드에 존재하는 가장 최신 날짜(YYYY-MM-DD) 무조건 추출
+        all_dates = re.findall(r'(202[3-9]-[0-1]\d-[0-3]\d)', html)
+        if all_dates:
+            best_date = sorted(set(all_dates))[-1]
+            print("  -> [성공] 정확한 속성은 없으나, HTML 내부에서 최신 작성일을 추출했습니다.")
+            return best_date
+
+        print("  -> [경고] 모든 탐색 기법을 동원했으나 날짜를 찾을 수 없습니다.")
         return "-"
     except Exception as e:
         print(f"  -> [에러] 페이지 접근 실패: {e}")
@@ -128,8 +142,7 @@ def main():
         for u in updates:
             connect_info.append({
                 "title": f"[{u['name']}] 업데이트",
-                "description": f"새로운 날짜: **{u['date']}**\n[문서 바로가기]({u['url']})",
-                "imageUrl": ""
+                "description": f"새로운 날짜: **{u['date']}**\n[문서 바로가기]({u['url']})"
             })
             
         payload = {
