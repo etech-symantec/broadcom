@@ -271,6 +271,67 @@
     color: #6b7280;
     text-align: center;
   }
+
+  /* ---------- 하단 프록시 대시보드 (새로 추가됨) ---------- */
+  .proxy-dashboard {
+    margin-top: 22px;
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    padding: 16px 20px;
+  }
+  .proxy-dashboard h4 {
+    margin: 0 0 14px;
+    color: #1e3a5f;
+    font-size: 1.05rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .proxy-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .proxy-btn {
+    background: #f8fafc;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    padding: 8px 14px;
+    font-size: 0.85rem;
+    color: #334155;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 600;
+  }
+  .proxy-btn .badge {
+    background: #2563eb;
+    color: #fff;
+    padding: 3px 8px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+  }
+  .proxy-btn.active-high {
+    border-color: #fca5a5;
+    background: #fef2f2;
+  }
+  .proxy-btn.active-high .badge {
+    background: #ef4444; /* 연결 수가 많을 때 붉은색 강조 */
+  }
+  .refresh-btn {
+    background: #e2e8f0;
+    color: #475569;
+    border: none;
+    padding: 5px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.75rem;
+    font-weight: 600;
+    transition: background 0.2s;
+  }
+  .refresh-btn:hover { background: #cbd5e1; }
 </style>
 </head>
 
@@ -278,7 +339,7 @@
 <!-- 공통 헤더 + 제목 + 버전 -->
 <script>
   window.pageTitle = "브로드컴 링크";
-  window.pageVersion = "ver.2026.3.11.01";
+  window.pageVersion = "ver.2026.4.15.01";
 </script> 
 <script src="https://etech-symantec.github.io/header.js"></script>
   
@@ -353,6 +414,8 @@
       </svg>
       PacketShaper
     </button>
+
+    <hr style="border:0; border-top:1px solid #d1d5db; margin: 14px 0;">
 
     <!-- 서브메뉴는 JS에서 동적으로 삽입 -->
     
@@ -829,6 +892,84 @@ function viewPDF(uniqueId) {
       iframeTitle.textContent = "📄 Broadcom KB Preview"; // 에러 시 복구
     });
 }
+// ★ 프록시 로그 파싱 및 버튼 렌더링 스크립트 ★
+function fetchProxyLog() {
+  const proxyContainer = document.getElementById("proxyContainer");
+  const proxyTime = document.getElementById("proxyTime");
+  
+  // 초기화 상태 표시
+  proxyContainer.innerHTML = '<span style="font-size:0.85rem; color:#64748b;">로그 데이터를 불러오는 중입니다...</span>';
+  
+  // 브라우저 캐시 방지를 위해 쿼리스트링에 현재 타임스탬프 추가
+  const logUrl = `https://raw.githubusercontent.com/etech-symantec/broadcom/main/logs/proxy_8082_check.log?t=${new Date().getTime()}`;
+
+  fetch(logUrl)
+    .then(response => {
+      if (!response.ok) throw new Error("로그 파일 응답 에러");
+      return response.text();
+    })
+    .then(text => {
+      // 로그 내용이 비어있으면 (0바이트) 활성 연결이 없는 것임
+      if (!text.trim()) {
+        proxyContainer.innerHTML = '<span style="font-size:0.85rem; color:#10b981;">✅ 현재 8082 포트를 사용 중인 프록시(클라이언트)가 없습니다.</span>';
+        proxyTime.textContent = "";
+        return;
+      }
+
+      const lines = text.trim().split('\n');
+      const serverCounts = {};
+      let lastDate = "";
+
+      // 각 로그 라인 파싱 (정규식 사용)
+      lines.forEach(line => {
+        // 형태: "2026-04-15 17:28:32 - SERVER:172.16.70.212 - CLIENT:172.16.70.233"
+        const match = line.match(/^(.*?) - SERVER:(.*?) - CLIENT:(.*?)$/);
+        if (match) {
+          lastDate = match[1]; // 기준 시간을 추출 (가장 마지막 줄의 시간이 남게 됨)
+          const serverIp = match[2];
+          // 해당 서버의 연결 횟수 누적
+          serverCounts[serverIp] = (serverCounts[serverIp] || 0) + 1;
+        }
+      });
+
+      // 제목 옆에 기준 시간 표시
+      if (lastDate) {
+        proxyTime.textContent = `(기준 시간: ${lastDate})`;
+      }
+
+      proxyContainer.innerHTML = '';
+      const servers = Object.keys(serverCounts).sort(); // IP 오름차순 정렬
+      
+      // 연결이 없는 경우
+      if (servers.length === 0) {
+         proxyContainer.innerHTML = '<span style="font-size:0.85rem; color:#10b981;">✅ 데이터 분석 결과 활성화된 연결이 없습니다.</span>';
+         return;
+      }
+
+      // 서버별로 버튼 생성
+      servers.forEach(server => {
+        const count = serverCounts[server];
+        const btn = document.createElement('div');
+        
+        // 연결 수가 10개 이상이면 색상을 붉은색으로 강조
+        btn.className = `proxy-btn ${count >= 10 ? 'active-high' : ''}`;
+        btn.innerHTML = `
+          🌐 ${server}
+          <span class="badge">${count} 연결</span>
+        `;
+        proxyContainer.appendChild(btn);
+      });
+    })
+    .catch(error => {
+      console.error("Proxy Log Error:", error);
+      proxyContainer.innerHTML = '<span style="font-size:0.85rem; color:#ef4444;">❌ 로그 데이터를 가져오는 데 실패했습니다.</span>';
+    });
+}
+
+// 웹페이지가 처음 로드될 때 프록시 현황 자동 호출
+document.addEventListener("DOMContentLoaded", () => {
+  fetchProxyLog();
+});
 </script>
 
 </body>
