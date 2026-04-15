@@ -469,6 +469,16 @@
 
 </div>
 
+</div> <div class="proxy-dashboard">
+  <h4>
+    <span>📡 ProxySG 8082 포트 사용 현황 <span id="proxyTime" style="font-size:0.8rem; color:#64748b; font-weight:normal; margin-left:10px;"></span></span>
+    <button class="refresh-btn" onclick="fetchProxyLog()">🔄 수동 새로고침</button>
+  </h4>
+  <div class="proxy-container" id="proxyContainer">
+    <span style="font-size:0.85rem; color:#64748b;">로그 데이터를 불러오는 중입니다...</span>
+  </div>
+</div>
+
 <script>
 /* 장비별 설정 (EoS URL, PDF ID, 링크 등) */
 const deviceConfig = {
