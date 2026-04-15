@@ -272,66 +272,14 @@
     text-align: center;
   }
 
-  /* ---------- 하단 프록시 대시보드 (새로 추가됨) ---------- */
-  .proxy-dashboard {
-    margin-top: 22px;
-    background: #ffffff;
-    border: 1px solid #e5e7eb;
-    border-radius: 12px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-    padding: 16px 20px;
-  }
-  .proxy-dashboard h4 {
-    margin: 0 0 14px;
-    color: #1e3a5f;
-    font-size: 1.05rem;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-  }
-  .proxy-container {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-  }
-  .proxy-btn {
-    background: #f8fafc;
-    border: 1px solid #cbd5e1;
-    border-radius: 8px;
-    padding: 8px 14px;
-    font-size: 0.85rem;
-    color: #334155;
-    display: inline-flex;
-    align-items: center;
-    gap: 10px;
-    font-weight: 600;
-  }
-  .proxy-btn .badge {
-    background: #2563eb;
-    color: #fff;
-    padding: 3px 8px;
-    border-radius: 12px;
-    font-size: 0.75rem;
-  }
-  .proxy-btn.active-high {
-    border-color: #fca5a5;
-    background: #fef2f2;
-  }
-  .proxy-btn.active-high .badge {
-    background: #ef4444; /* 연결 수가 많을 때 붉은색 강조 */
-  }
-  .refresh-btn {
-    background: #e2e8f0;
-    color: #475569;
-    border: none;
-    padding: 5px 10px;
-    border-radius: 6px;
-    cursor: pointer;
-    font-size: 0.75rem;
-    font-weight: 600;
-    transition: background 0.2s;
-  }
-  .refresh-btn:hover { background: #cbd5e1; }
+  /* ---------- Proxy Dashboard ---------- */
+  .proxy-dashboard { margin-top: 22px; background: #ffffff; border: 1px solid #e5e7eb; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); padding: 16px 20px; }
+  .proxy-dashboard h4 { margin: 0 0 14px; color: #1e3a5f; font-size: 1.05rem; display: flex; align-items: center; justify-content: space-between; }
+  .proxy-container { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 15px; }
+  .proxy-btn { background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 20px; padding: 6px 14px; font-size: 0.82rem; color: #334155; display: inline-flex; align-items: center; gap: 8px; font-weight: 600; }
+  .proxy-btn .badge { background: #2563eb; color: #fff; padding: 2px 8px; border-radius: 12px; font-size: 0.72rem; }
+  .client-btn { background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 20px; padding: 6px 14px; font-size: 0.82rem; color: #166534; font-weight: 600; display: inline-flex; align-items: center; gap: 6px; }
+  .refresh-btn { background: #e2e8f0; color: #475569; border: none; padding: 5px 10px; border-radius: 6px; cursor: pointer; font-size: 0.75rem; font-weight: 600; }
 </style>
 </head>
 
