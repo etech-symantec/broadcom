@@ -272,14 +272,24 @@
     text-align: center;
   }
 
-  /* ---------- Proxy Dashboard ---------- */
-  .proxy-dashboard { margin-top: 22px; background: #ffffff; border: 1px solid #e5e7eb; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); padding: 16px 20px; }
-  .proxy-dashboard h4 { margin: 0 0 14px; color: #1e3a5f; font-size: 1.05rem; display: flex; align-items: center; justify-content: space-between; }
-  .proxy-container { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 15px; }
-  .proxy-btn { background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 20px; padding: 6px 14px; font-size: 0.82rem; color: #334155; display: inline-flex; align-items: center; gap: 8px; font-weight: 600; }
-  .proxy-btn .badge { background: #2563eb; color: #fff; padding: 2px 8px; border-radius: 12px; font-size: 0.72rem; }
-  .client-btn { background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 20px; padding: 6px 14px; font-size: 0.82rem; color: #166534; font-weight: 600; display: inline-flex; align-items: center; gap: 6px; }
-  .refresh-btn { background: #e2e8f0; color: #475569; border: none; padding: 5px 10px; border-radius: 6px; cursor: pointer; font-size: 0.75rem; font-weight: 600; }
+  /* ---------- Proxy Tree Dashboard (Update) ---------- */
+  .proxy-dashboard { margin-top: 22px; background: #ffffff; border: 1px solid #e5e7eb; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); padding: 20px; }
+  .proxy-dashboard h4 { margin: 0 0 20px; color: #1e3a5f; font-size: 1.1rem; display: flex; align-items: center; justify-content: space-between; }
+  
+  .tree-root { list-style: none; padding: 0; margin: 0; }
+  .tree-node { position: relative; padding-left: 30px; margin-bottom: 10px; }
+  .tree-node::before { content: ""; position: absolute; left: 0; top: 15px; width: 20px; height: 1px; background: #cbd5e1; }
+  .tree-node::after { content: ""; position: absolute; left: 0; top: 0; width: 1px; height: 100%; background: #cbd5e1; }
+  .tree-node:last-child::after { height: 15px; }
+
+  .proxy-item { background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 8px; padding: 8px 15px; display: inline-flex; align-items: center; gap: 10px; font-weight: 600; color: #1e293b; min-width: 200px; }
+  .proxy-item .count { background: #2563eb; color: #fff; padding: 2px 8px; border-radius: 10px; font-size: 0.75rem; }
+  
+  .client-list { list-style: none; padding: 5px 0 0 40px; margin: 0; }
+  .client-item { position: relative; padding: 5px 15px; margin-top: 4px; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 6px; font-size: 0.82rem; color: #166534; display: inline-block; }
+  .client-item::before { content: "└"; position: absolute; left: -20px; color: #cbd5e1; font-weight: bold; }
+
+  .refresh-btn { background: #e2e8f0; color: #475569; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 0.8rem; font-weight: 600; }
 </style>
 </head>
 
@@ -421,14 +431,12 @@
   
 <div class="proxy-dashboard">
   <h4>
-    <span>📡 ProxySG 8082 Connection Status <span id="proxyTime" style="font-size:0.8rem; color:#64748b; font-weight:normal; margin-left:10px;"></span></span>
-    <button class="refresh-btn" onclick="fetchProxyLog()">🔄 Refresh</button>
+    <span>🌳 Proxy-Client Connection Tree <span id="proxyTime" style="font-size:0.8rem; color:#64748b; font-weight:normal; margin-left:10px;"></span></span>
+    <button class="refresh-btn" onclick="fetchProxyLog()">🔄 Tree Refresh</button>
   </h4>
-  <div style="font-size:0.85rem; font-weight:600; color:#475569; margin-bottom:8px;">🖥️ Active Servers</div>
-  <div class="proxy-container" id="proxyContainer"></div>
-  
-  <div style="font-size:0.85rem; font-weight:600; color:#475569; margin-bottom:8px;">👤 Active Client IPs</div>
-  <div class="proxy-container" id="clientContainer"></div>
+  <div id="treeContainer">
+    <span style="font-size:0.85rem; color:#64748b;">데이터를 구성 중입니다...</span>
+  </div>
 </div>
 
 <script>
@@ -856,41 +864,42 @@ function viewPDF(uniqueId) {
 }
 // ★ 프록시 로그 파싱 및 버튼 렌더링 스크립트 ★
 function fetchProxyLog() {
-  const proxyContainer = document.getElementById("proxyContainer");
-  const clientContainer = document.getElementById("clientContainer");
-  const proxyTime = document.getElementById("proxyTime");
-  const logUrl = `https://raw.githubusercontent.com/etech-symantec/broadcom/main/logs/proxy_8082_check.log?t=${new Date().getTime()}`;
+  const container = document.getElementById("treeContainer");
+  const logUrl = `https://raw.githubusercontent.com/etech-symantec/broadcom/main/logs/proxy_8082_check.log?t=${Date.now()}`;
 
   fetch(logUrl).then(r => r.text()).then(text => {
     if (!text.trim()) {
-      proxyContainer.innerHTML = '<span>No active connections.</span>';
-      clientContainer.innerHTML = '<span>None</span>';
+      container.innerHTML = '<span style="color:#10b981;">✅ No active connections found.</span>';
       return;
     }
-    const lines = text.trim().split('\n');
-    const serverCounts = {};
-    const clientIps = new Set();
-    let lastDate = "";
 
-    lines.forEach(line => {
+    const mapping = {}; // { serverIp: [clientIps] }
+    let lastTime = "";
+    text.trim().split('\n').forEach(line => {
       const match = line.match(/^(.*?) - SERVER:(.*?) - CLIENT:(.*?)$/);
       if (match) {
-        lastDate = match[1];
-        serverCounts[match[2]] = (serverCounts[match[2]] || 0) + 1;
-        clientIps.add(match[3]);
+        lastTime = match[1];
+        if (!mapping[match[2]]) mapping[match[2]] = [];
+        mapping[match[2]].push(match[3]);
       }
     });
 
-    proxyTime.textContent = `(Updated: ${lastDate})`;
-    proxyContainer.innerHTML = '';
-    Object.keys(serverCounts).sort().forEach(s => {
-      proxyContainer.innerHTML += `<div class="proxy-btn">🌐 ${s} <span class="badge">${serverCounts[s]} Connections</span></div>`;
+    document.getElementById("proxyTime").textContent = `(Last Check: ${lastTime})`;
+    
+    let html = '<ul class="tree-root">';
+    Object.keys(mapping).sort().forEach(server => {
+      html += `<li class="tree-node">
+        <div class="proxy-item">🌐 ${server} <span class="count">${mapping[server].length} Sessions</span></div>
+        <ul class="client-list">`;
+      mapping[server].forEach(client => {
+        html += `<li class="client-item">👤 ${client}</li>`;
+      });
+      html += `</ul></li>`;
     });
-
-    clientContainer.innerHTML = '';
-    clientIps.forEach(ip => {
-      clientContainer.innerHTML += `<div class="client-btn">👤 ${ip}</div>`;
-    });
+    html += '</ul>';
+    container.innerHTML = html;
+  }).catch(() => {
+    container.innerHTML = '<span style="color:#ef4444;">❌ Failed to load connection data.</span>';
   });
 }
 
