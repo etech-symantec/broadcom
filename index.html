@@ -868,18 +868,18 @@ function fetchProxyLog() {
   const container = document.getElementById("treeContainer");
   const timeSpan = document.getElementById("proxyTime");
   
-  // 로그 파일 URL과 GitHub 커밋 기록 확인 API URL
   const logUrl = `https://raw.githubusercontent.com/etech-symantec/broadcom/main/logs/proxy_8082_check.log?t=${Date.now()}`;
   const commitApiUrl = `https://api.github.com/repos/etech-symantec/broadcom/commits?path=logs/proxy_8082_check.log&page=1&per_page=1`;
 
   fetch(logUrl).then(r => r.text()).then(text => {
-    
-    // 💡 1. 접속자가 없어서 빈 파일일 경우 (GitHub API로 시간 가져오기)
-    if (!text.trim()) {
+    const lines = text.trim().split('\n').filter(line => line.length > 0);
+
+    // 💡 1. 파일이 완전히 비어있는 경우 (0바이트)
+    if (lines.length === 0) {
       fetch(commitApiUrl)
         .then(res => res.json())
         .then(data => {
-          if (data && data.length > 0) {
+          if (data && data.length > 0 && data[0].commit) {
             const dateObj = new Date(data[0].commit.committer.date);
             const yyyy = dateObj.getFullYear();
             const mm = String(dateObj.getMonth() + 1).padStart(2, '0');
@@ -888,6 +888,8 @@ function fetchProxyLog() {
             const min = String(dateObj.getMinutes()).padStart(2, '0');
             const sec = String(dateObj.getSeconds()).padStart(2, '0');
             timeSpan.textContent = `(Last Check: ${yyyy}-${mm}-${dd} ${hh}:${min}:${sec})`;
+          } else if (data.message && data.message.includes("API rate limit")) {
+            timeSpan.textContent = `(GitHub API 요청 제한 초과)`;
           }
         })
         .catch(() => { timeSpan.textContent = ""; });
@@ -896,23 +898,39 @@ function fetchProxyLog() {
       return;
     }
 
-    // 💡 2. 접속자가 있을 경우 (로그에서 파싱하여 트리 구조 생성)
+    // 💡 2. 로그에 내용이 있는 경우
     const mapping = {}; // { serverIp: [clientIps] }
     let lastTime = "";
     
-    text.trim().split('\n').forEach(line => {
-      const match = line.match(/^(.*?) - SERVER:(.*?) - CLIENT:(.*?)$/);
-      if (match) {
-        lastTime = match[1];
-        const server = match[2];
-        const client = match[3];
+    lines.forEach(line => {
+      // 어떤 로그 형태든 맨 앞의 날짜/시간(YYYY-MM-DD HH:MM:SS) 형식은 무조건 우선 추출
+      const timeMatch = line.match(/^(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})/);
+      if (timeMatch) {
+        lastTime = timeMatch[1];
+      }
+
+      // 접속자 정보가 있는 라인만 필터링하여 트리 구성
+      const clientMatch = line.match(/SERVER:(.*?) - CLIENT:(.*?)$/);
+      if (clientMatch) {
+        const server = clientMatch[1].trim();
+        const client = clientMatch[2].trim();
         if (!mapping[server]) mapping[server] = [];
         mapping[server].push(client);
       }
     });
 
-    timeSpan.textContent = `(Last Check: ${lastTime})`;
+    if (lastTime) {
+      timeSpan.textContent = `(Last Check: ${lastTime})`;
+    } else {
+      timeSpan.textContent = `(Last Check: 시간 정보 없음)`;
+    }
     
+    // 시간은 있지만 접속자 데이터는 없는 경우 (예: 모두 인증 실패)
+    if (Object.keys(mapping).length === 0) {
+      container.innerHTML = '<span style="color:#64748b; font-weight:600;">⚠️ 접속된 클라이언트가 없거나 로그 형식이 다릅니다.</span>';
+      return;
+    }
+
     let html = '<ul class="tree-root">';
     Object.keys(mapping).sort().forEach(server => {
       html += `
