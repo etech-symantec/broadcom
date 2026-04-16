@@ -282,7 +282,15 @@
   /* 각 서버 노드는 세로 방향으로 구성 (서버버튼 - 클라이언트리스트) */
   .tree-node { display: flex; flex-direction: column; min-width: 180px; }
   
-  .proxy-item { background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 8px; padding: 8px 15px; display: inline-flex; align-items: center; gap: 10px; font-weight: 600; color: #1e293b; margin-bottom: 12px; white-space: nowrap; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+  .proxy-item { 
+    background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 8px; 
+    padding: 8px 15px; display: inline-flex; align-items: center; gap: 10px; 
+    font-weight: 600; color: #1e293b; min-width: 200px; 
+  }
+  /* 서버 상태 점(Dot) 스타일 */
+  .status-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+  .status-up { background: #22c55e; box-shadow: 0 0 8px #22c55e; } /* Online: 초록색 */
+  .status-down { background: #ef4444; box-shadow: 0 0 8px #ef4444; } /* Offline: 빨간색 */
   .proxy-item .count { background: #2563eb; color: #fff; padding: 2px 8px; border-radius: 10px; font-size: 0.75rem; }
   
   /* 클라이언트 리스트 스타일 */
@@ -867,78 +875,54 @@ function viewPDF(uniqueId) {
 function fetchProxyLog() {
   const container = document.getElementById("treeContainer");
   const timeSpan = document.getElementById("proxyTime");
-  
   const logUrl = `https://raw.githubusercontent.com/etech-symantec/broadcom/main/logs/proxy_8082_check.log?t=${Date.now()}`;
-  const commitApiUrl = `https://api.github.com/repos/etech-symantec/broadcom/commits?path=logs/proxy_8082_check.log&page=1&per_page=1`;
 
   fetch(logUrl).then(r => r.text()).then(text => {
-    const lines = text.trim().split('\n').filter(line => line.length > 0);
-
-    // 💡 1. 파일이 완전히 비어있는 경우 (0바이트)
+    const lines = text.trim().split('\n').filter(l => l.length > 0);
     if (lines.length === 0) {
-      fetch(commitApiUrl)
-        .then(res => res.json())
-        .then(data => {
-          if (data && data.length > 0 && data[0].commit) {
-            const dateObj = new Date(data[0].commit.committer.date);
-            const yyyy = dateObj.getFullYear();
-            const mm = String(dateObj.getMonth() + 1).padStart(2, '0');
-            const dd = String(dateObj.getDate()).padStart(2, '0');
-            const hh = String(dateObj.getHours()).padStart(2, '0');
-            const min = String(dateObj.getMinutes()).padStart(2, '0');
-            const sec = String(dateObj.getSeconds()).padStart(2, '0');
-            timeSpan.textContent = `(Last Check: ${yyyy}-${mm}-${dd} ${hh}:${min}:${sec})`;
-          } else if (data.message && data.message.includes("API rate limit")) {
-            timeSpan.textContent = `(GitHub API 요청 제한 초과)`;
-          }
-        })
-        .catch(() => { timeSpan.textContent = ""; });
-
-      container.innerHTML = '<span style="color:#10b981; font-weight:600;">✅ No active connections found.</span>';
+      container.innerHTML = '<span>로그 데이터가 비어 있습니다.</span>';
       return;
     }
 
-    // 💡 2. 로그에 내용이 있는 경우
-    const mapping = {}; // { serverIp: [clientIps] }
+    const mapping = {}; // { serverIp: { status: 'UP'|'DOWN', clients: [] } }
     let lastTime = "";
-    
-    lines.forEach(line => {
-      // 어떤 로그 형태든 맨 앞의 날짜/시간(YYYY-MM-DD HH:MM:SS) 형식은 무조건 우선 추출
-      const timeMatch = line.match(/^(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})/);
-      if (timeMatch) {
-        lastTime = timeMatch[1];
-      }
 
-      // 접속자 정보가 있는 라인만 필터링하여 트리 구성
-      const clientMatch = line.match(/SERVER:(.*?) - CLIENT:(.*?)$/);
-      if (clientMatch) {
-        const server = clientMatch[1].trim();
-        const client = clientMatch[2].trim();
-        if (!mapping[server]) mapping[server] = [];
-        mapping[server].push(client);
+    lines.forEach(line => {
+      // 시간 추출
+      const tMatch = line.match(/^(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})/);
+      if (tMatch) lastTime = tMatch[1];
+
+      // 서버 및 상태 추출 (예: SERVER:172.16.70.214 [UP])
+      const sMatch = line.match(/SERVER:(.*?) \[(UP|DOWN)\]/);
+      if (sMatch) {
+        const sIp = sMatch[1].trim();
+        const sStatus = sMatch[2];
+        if (!mapping[sIp]) mapping[sIp] = { status: sStatus, clients: [] };
+
+        // 클라이언트 정보가 있는 경우 추가
+        const cMatch = line.match(/CLIENT:(.*?)$/);
+        if (cMatch) {
+          mapping[sIp].clients.push(cMatch[1].trim());
+        }
       }
     });
 
-    if (lastTime) {
-      timeSpan.textContent = `(Last Check: ${lastTime})`;
-    } else {
-      timeSpan.textContent = `(Last Check: 시간 정보 없음)`;
-    }
-    
-    // 시간은 있지만 접속자 데이터는 없는 경우 (예: 모두 인증 실패)
-    if (Object.keys(mapping).length === 0) {
-      container.innerHTML = '<span style="color:#64748b; font-weight:600;">⚠️ 접속된 클라이언트가 없거나 로그 형식이 다릅니다.</span>';
-      return;
-    }
-
+    timeSpan.textContent = `(Last Check: ${lastTime})`;
     let html = '<ul class="tree-root">';
     Object.keys(mapping).sort().forEach(server => {
+      const data = mapping[server];
+      const statusClass = data.status === "UP" ? "status-up" : "status-down";
+      
       html += `
         <li class="tree-node">
-          <div class="proxy-item">🌐 ${server} <span class="count">${mapping[server].length}</span></div>
+          <div class="proxy-item">
+            <span class="status-dot ${statusClass}"></span>
+            🌐 ${server} 
+            ${data.status === "UP" ? `<span class="count">${data.clients.length}</span>` : `<span style="color:#ef4444; font-size:0.75rem;">OFFLINE</span>`}
+          </div>
           <ul class="client-list">`;
       
-      mapping[server].forEach(client => {
+      data.clients.forEach(client => {
         html += `<li class="client-item">👤 ${client}</li>`;
       });
       
@@ -946,9 +930,6 @@ function fetchProxyLog() {
     });
     html += '</ul>';
     container.innerHTML = html;
-    
-  }).catch(() => {
-    container.innerHTML = '<span style="color:#ef4444; font-weight:600;">❌ Failed to load connection data.</span>';
   });
 }
 
