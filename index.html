@@ -284,8 +284,10 @@
   
   .proxy-item { 
     background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 8px; 
-    padding: 8px 15px; display: inline-flex; align-items: center; gap: 10px; 
-    font-weight: 600; color: #1e293b; min-width: 200px; 
+    padding: 6px 12px; display: inline-flex; align-items: center; gap: 8px; 
+    font-weight: 600; color: #1e293b; 
+    min-width: fit-content; /* 💡 가로 길이를 콤팩트하게 변경 */
+    white-space: nowrap; box-shadow: 0 2px 4px rgba(0,0,0,0.05); 
   }
   /* 서버 상태 점(Dot) 스타일 */
   .status-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
@@ -876,99 +878,88 @@ function fetchProxyLog() {
   const container = document.getElementById("treeContainer");
   const timeSpan = document.getElementById("proxyTime");
   
-  // 💡 버튼 클릭 시 시각적인 피드백을 위해 텍스트를 잠시 변경합니다.
   const refreshBtn = document.querySelector(".refresh-btn");
-  const originalBtnText = refreshBtn.innerHTML;
-  refreshBtn.innerHTML = "⏳ Loading...";
-  refreshBtn.disabled = true;
+  if (refreshBtn) {
+    refreshBtn.innerHTML = "⏳ Loading...";
+    refreshBtn.disabled = true;
+  }
 
-  // 캐시를 완전히 무시하도록 타임스탬프와 캐시 컨트롤 헤더를 함께 사용합니다.
-  const logUrl = `https://raw.githubusercontent.com/etech-symantec/broadcom/main/logs/proxy_8082_check.log?t=${new Date().getTime()}`;
+  const logUrl = `https://raw.githubusercontent.com/etech-symantec/broadcom/main/logs/proxy_8082_check.log?t=${Date.now()}`;
   const commitApiUrl = `https://api.github.com/repos/etech-symantec/broadcom/commits?path=logs/proxy_8082_check.log&page=1&per_page=1`;
 
-  fetch(logUrl, { cache: "no-store" })
-    .then(r => r.text())
-    .then(text => {
-      const lines = text.trim().split('\n').filter(l => l.length > 0);
+  fetch(logUrl, { cache: "no-store" }).then(r => r.text()).then(text => {
+    const lines = text.trim().split('\n').filter(l => l.length > 0);
 
-      // 1. 파일이 비어있는 경우 (커밋 기록에서 시간 추출)
-      if (lines.length === 0) {
-        fetch(commitApiUrl)
-          .then(res => res.json())
-          .then(data => {
-            if (data && data.length > 0 && data[0].commit) {
-              const dateObj = new Date(data[0].commit.committer.date);
-              timeSpan.textContent = `(Last Check: ${formatDate(dateObj)})`;
-            } else if (data.message) {
-              timeSpan.textContent = "(GitHub API Limit Reached)";
-            }
-          })
-          .catch(() => { timeSpan.textContent = ""; });
-
-        container.innerHTML = '<span style="color:#10b981; font-weight:600;">✅ No active connections found.</span>';
-      } else {
-        // 2. 로그 데이터가 있는 경우
-        const mapping = {};
-        let lastTime = "";
-
-        lines.forEach(line => {
-          const tMatch = line.match(/^(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})/);
-          if (tMatch) lastTime = tMatch[1];
-
-          const sMatch = line.match(/SERVER:(.*?) \[(UP|DOWN)\]/);
-          if (sMatch) {
-            const sIp = sMatch[1].trim();
-            const sStatus = sMatch[2];
-            if (!mapping[sIp]) mapping[sIp] = { status: sStatus, clients: [] };
-
-            const cMatch = line.match(/CLIENT:(.*?)$/);
-            if (cMatch) mapping[sIp].clients.push(cMatch[1].trim());
+    // 💡 1. 로그가 비어있을 때 (GitHub API로 커밋 시간 확인)
+    if (lines.length === 0) {
+      fetch(commitApiUrl)
+        .then(res => res.json())
+        .then(data => {
+          if (data && data.length > 0 && data[0].commit) {
+            const dateObj = new Date(data[0].commit.committer.date);
+            timeSpan.textContent = `(Last Check: ${formatDate(dateObj)})`;
           }
-        });
+        }).catch(() => {});
+      container.innerHTML = '<span style="color:#10b981; font-weight:600;">✅ No active connections found.</span>';
+    } else {
+      // 💡 2. 로그 데이터 파싱
+      const mapping = {};
+      let lastTime = "";
 
-        timeSpan.textContent = `(Last Check: ${lastTime})`;
-        
-        let html = '<ul class="tree-root">';
-        Object.keys(mapping).sort((a, b) => {
-          // IP 마지막 숫자로 정렬
-          return parseInt(a.split('.').pop()) - parseInt(b.split('.').pop());
-        }).forEach(server => {
+      lines.forEach(line => {
+        const tMatch = line.match(/^(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})/);
+        if (tMatch) lastTime = tMatch[1];
+
+        const sMatch = line.match(/SERVER:(.*?) \[(UP|DOWN)\]/);
+        if (sMatch) {
+          const sIp = sMatch[1].trim();
+          const sStatus = sMatch[2];
+          if (!mapping[sIp]) mapping[sIp] = { status: sStatus, clients: [] };
+
+          const cMatch = line.match(/CLIENT:(.*?)$/);
+          if (cMatch) mapping[sIp].clients.push(cMatch[1].trim());
+        }
+      });
+
+      timeSpan.textContent = `(Last Check: ${lastTime})`;
+      
+      let html = '<ul class="tree-root">';
+      Object.keys(mapping).sort((a, b) => parseInt(a.split('.').pop()) - parseInt(b.split('.').pop()))
+        .forEach(server => {
           const data = mapping[server];
           const statusClass = data.status === "UP" ? "status-up" : "status-down";
+          const shortName = server.split('.').pop() + "번"; // 💡 IP 끝자리만 표기
           
-          // 💡 서버 이름을 IP 마지막 번호 + "번"으로 변경
-          const shortName = server.split('.').pop() + "번";
+          // 💡 접속자가 있을 때만 숫자 배지 생성, 오프라인 시 텍스트 생략
+          const badge = (data.status === "UP" && data.clients.length > 0) 
+                        ? `<span class="count">${data.clients.length}</span>` 
+                        : "";
           
           html += `
             <li class="tree-node">
               <div class="proxy-item" title="${server}">
                 <span class="status-dot ${statusClass}"></span>
                 🌐 ${shortName} 
-                ${data.status === "UP" ? `<span class="count">${data.clients.length}</span>` : `<span style="color:#ef4444; font-size:0.75rem;">OFFLINE</span>`}
+                ${badge}
               </div>
               <ul class="client-list">`;
           
           data.clients.forEach(client => {
             html += `<li class="client-item">👤 ${client}</li>`;
           });
-          
           html += `</ul></li>`;
         });
-        html += '</ul>';
-        container.innerHTML = html;
-      }
-    })
-    .catch(() => {
-      container.innerHTML = '<span style="color:#ef4444;">❌ Failed to load data.</span>';
-    })
-    .finally(() => {
-      // 버튼 상태 복구
-      refreshBtn.innerHTML = originalBtnText;
+      html += '</ul>';
+      container.innerHTML = html;
+    }
+  }).finally(() => {
+    if (refreshBtn) {
+      refreshBtn.innerHTML = "🔄 Tree Refresh";
       refreshBtn.disabled = false;
-    });
+    }
+  });
 }
 
-// 날짜 포맷팅 헬퍼 함수
 function formatDate(date) {
   const pad = (n) => String(n).padStart(2, '0');
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
