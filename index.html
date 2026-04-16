@@ -866,19 +866,40 @@ function viewPDF(uniqueId) {
 // ★ 프록시 로그 파싱 및 버튼 렌더링 스크립트 ★
 function fetchProxyLog() {
   const container = document.getElementById("treeContainer");
-  // 캐시 방지를 위해 타임스탬프 추가
+  const timeSpan = document.getElementById("proxyTime");
+  
+  // 로그 파일 URL과 GitHub 커밋 기록 확인 API URL
   const logUrl = `https://raw.githubusercontent.com/etech-symantec/broadcom/main/logs/proxy_8082_check.log?t=${Date.now()}`;
+  const commitApiUrl = `https://api.github.com/repos/etech-symantec/broadcom/commits?path=logs/proxy_8082_check.log&page=1&per_page=1`;
 
   fetch(logUrl).then(r => r.text()).then(text => {
+    
+    // 💡 1. 접속자가 없어서 빈 파일일 경우 (GitHub API로 시간 가져오기)
     if (!text.trim()) {
-      container.innerHTML = '<span style="color:#10b981;">✅ No active connections found.</span>';
+      fetch(commitApiUrl)
+        .then(res => res.json())
+        .then(data => {
+          if (data && data.length > 0) {
+            const dateObj = new Date(data[0].commit.committer.date);
+            const yyyy = dateObj.getFullYear();
+            const mm = String(dateObj.getMonth() + 1).padStart(2, '0');
+            const dd = String(dateObj.getDate()).padStart(2, '0');
+            const hh = String(dateObj.getHours()).padStart(2, '0');
+            const min = String(dateObj.getMinutes()).padStart(2, '0');
+            const sec = String(dateObj.getSeconds()).padStart(2, '0');
+            timeSpan.textContent = `(Last Check: ${yyyy}-${mm}-${dd} ${hh}:${min}:${sec})`;
+          }
+        })
+        .catch(() => { timeSpan.textContent = ""; });
+
+      container.innerHTML = '<span style="color:#10b981; font-weight:600;">✅ No active connections found.</span>';
       return;
     }
 
+    // 💡 2. 접속자가 있을 경우 (로그에서 파싱하여 트리 구조 생성)
     const mapping = {}; // { serverIp: [clientIps] }
     let lastTime = "";
     
-    // 로그 라인별 파싱
     text.trim().split('\n').forEach(line => {
       const match = line.match(/^(.*?) - SERVER:(.*?) - CLIENT:(.*?)$/);
       if (match) {
@@ -890,17 +911,15 @@ function fetchProxyLog() {
       }
     });
 
-    document.getElementById("proxyTime").textContent = `(Last Check: ${lastTime})`;
+    timeSpan.textContent = `(Last Check: ${lastTime})`;
     
     let html = '<ul class="tree-root">';
-    // 서버별 가로 배치 루프
     Object.keys(mapping).sort().forEach(server => {
       html += `
         <li class="tree-node">
           <div class="proxy-item">🌐 ${server} <span class="count">${mapping[server].length}</span></div>
           <ul class="client-list">`;
       
-      // 해당 서버의 접속자들 세로 배치
       mapping[server].forEach(client => {
         html += `<li class="client-item">👤 ${client}</li>`;
       });
@@ -909,8 +928,9 @@ function fetchProxyLog() {
     });
     html += '</ul>';
     container.innerHTML = html;
+    
   }).catch(() => {
-    container.innerHTML = '<span style="color:#ef4444;">❌ Failed to load connection data.</span>';
+    container.innerHTML = '<span style="color:#ef4444; font-weight:600;">❌ Failed to load connection data.</span>';
   });
 }
 
