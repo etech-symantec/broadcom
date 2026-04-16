@@ -298,20 +298,44 @@
     background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 8px; 
     padding: 6px 12px; display: inline-flex; align-items: center; gap: 8px; 
     font-weight: 600; color: #1e293b; 
-    min-width: fit-content; /* 💡 가로 길이를 콤팩트하게 변경 */
-    white-space: nowrap; box-shadow: 0 2px 4px rgba(0,0,0,0.05); 
+    min-width: fit-content; white-space: nowrap; box-shadow: 0 2px 4px rgba(0,0,0,0.05); 
+    margin-bottom: 6px; /* 💡 서버 버튼과 하위 접속자 사이의 상하 간격 축소 */
+    z-index: 2; /* 선보다 버튼이 위로 오도록 처리 */
   }
-  /* 서버 상태 점(Dot) 스타일 */
+  /* 상태 아이콘(UP/DOWN) */
   .status-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
-  .status-up { background: #22c55e; box-shadow: 0 0 8px #22c55e; } /* Online: 초록색 */
-  .status-down { background: #ef4444; box-shadow: 0 0 8px #ef4444; } /* Offline: 빨간색 */
-  .proxy-item .count { background: #2563eb; color: #fff; padding: 2px 8px; border-radius: 10px; font-size: 0.75rem; }
-  
-  /* 클라이언트 리스트 스타일 */
-  .client-list { list-style: none; padding: 0 0 0 15px; margin: 0; border-left: 2px solid #e2e8f0; }
-  .client-item { position: relative; padding: 5px 12px; margin-bottom: 6px; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 6px; font-size: 0.82rem; color: #166534; display: block; white-space: nowrap; }
-  .client-item::before { content: "└"; position: absolute; left: -12px; top: 5px; color: #cbd5e1; font-weight: bold; }
+  .status-up { background: #22c55e; box-shadow: 0 0 8px #22c55e; }
+  .status-down { background: #ef4444; box-shadow: 0 0 8px #ef4444; }
 
+  /* 트리 세로선: 서버 버튼 중앙에 오도록 여백 조정 */
+  .client-list { 
+    list-style: none; 
+    padding: 0 0 0 14px; /* 세로선과 접속자 버튼 사이의 간격 */
+    margin: 0 0 0 16px;  /* 세로선이 서버 버튼 왼쪽 16px 위치에서 시작되도록 이동 */
+    border-left: 2px solid #cbd5e1; /* 깔끔한 회색 세로선 */
+  }
+
+  /* 접속자 버튼 디자인 */
+  .client-item { 
+    position: relative; 
+    padding: 5px 12px; 
+    margin-bottom: 6px; 
+    background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 6px; 
+    font-size: 0.8rem; color: #166534; display: block; white-space: nowrap; 
+  }
+
+  /* 💡 트리 가로선: 기호(└)를 지우고 두께 2px의 그래픽 선으로 대체하여 완성도 향상 */
+  .client-item::before { 
+    content: ""; 
+    position: absolute; 
+    left: -14px;         /* 왼쪽 세로선과 맞닿는 위치 */
+    top: 50%;            /* 버튼 높이의 정중앙 */
+    width: 14px;         /* 가로선 길이 */
+    height: 2px;         /* 가로선 두께 */
+    background: #cbd5e1; /* 선 색상 */
+    transform: translateY(-50%);
+  }
+  
   .refresh-btn { background: #e2e8f0; color: #475569; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 0.8rem; font-weight: 600; }
 </style>
 </head>
@@ -959,7 +983,7 @@ function fetchProxyLog() {
   })
   .finally(() => {
     if (refreshBtn) {
-      refreshBtn.innerHTML = "🔄 Tree Refresh";
+      refreshBtn.innerHTML = "🔄 새로고침 (3분 간격)";
       refreshBtn.disabled = false;
     }
   });
