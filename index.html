@@ -276,11 +276,15 @@
   .proxy-dashboard { margin-top: 22px; background: #ffffff; border: 1px solid #e5e7eb; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); padding: 20px; }
   .proxy-dashboard h4 { margin: 0 0 20px; color: #1e3a5f; font-size: 1.1rem; display: flex; align-items: center; justify-content: space-between; }
   
-  /* 서버 노드 컨테이너 (간격 축소) */
+  /* 💡 서버 노드 컨테이너 (화면이 좁아지면 자동으로 줄바꿈) */
   .tree-root { 
-    display: flex; flex-wrap: nowrap; overflow-x: auto; 
-    gap: 8px; padding: 10px 5px; margin: 0; list-style: none; align-items: flex-start;
-    -ms-overflow-style: none; scrollbar-width: none; 
+    display: flex; 
+    flex-wrap: wrap; /* 💡 nowrap을 wrap으로 변경하여 공간이 부족하면 아래로 떨어지게 함 */
+    gap: 8px; 
+    padding: 10px 5px; 
+    margin: 0; 
+    list-style: none; 
+    align-items: flex-start;
   }
   .tree-root::-webkit-scrollbar { display: none; }
   
