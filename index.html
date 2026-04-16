@@ -296,6 +296,12 @@
     min-width: auto; white-space: nowrap; box-shadow: 0 1px 3px rgba(0,0,0,0.05); 
     margin-bottom: 4px; z-index: 2; 
   }
+  /* 💡 클릭 가능한 UP 상태 서버 버튼 디자인 (마우스 오버 효과) */
+  .proxy-item.up-state { cursor: pointer; transition: all 0.2s ease-in-out; }
+  .proxy-item.up-state:hover { 
+    background: #e2e8f0; border-color: #94a3b8; 
+    transform: translateY(-1px); box-shadow: 0 4px 6px rgba(0,0,0,0.08); 
+  }
   /* 상태 아이콘(UP/DOWN) */
   .status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
   .status-up { background: #22c55e; box-shadow: 0 0 6px #22c55e; }
@@ -940,11 +946,10 @@ function fetchProxyLog() {
 
     if (timeSpan) timeSpan.textContent = `(Last Check: ${lastTime})`;
     
-    // 💡 IP 마지막 자리 숫자를 명확하게 숫자로 변환하여 오름차순 정렬 (버그 수정)
+    // IP 마지막 자리 숫자를 명확하게 숫자로 변환하여 오름차순 정렬
     let html = '<ul class="tree-root">';
     
     const sortedServers = Object.keys(mapping).sort((a, b) => {
-      // 172.16.70.210 에서 210만 뽑아내어 확실한 숫자로(10진수) 비교
       const ipA = parseInt(a.split('.').pop(), 10) || 0;
       const ipB = parseInt(b.split('.').pop(), 10) || 0;
       return ipA - ipB;
@@ -952,19 +957,23 @@ function fetchProxyLog() {
 
     sortedServers.forEach(server => {
       const data = mapping[server];
-      const statusClass = data.status === "UP" ? "status-up" : "status-down";
+      const isUp = data.status === "UP"; // 💡 UP 상태 여부 확인
       
-      // 이름 단축 (예: 210번)
+      const statusClass = isUp ? "status-up" : "status-down";
       const shortName = server.split('.').pop() + "번"; 
       
-      // 배지 유무
-      const badge = (data.status === "UP" && data.clients.length > 0) 
+      const badge = (isUp && data.clients.length > 0) 
                     ? `<span class="count" style="background:#2563eb; color:#fff; padding:1px 6px; border-radius:8px; font-size:0.65rem;">${data.clients.length}</span>` 
                     : "";
       
+      // 💡 UP 상태일 때만 클릭 이벤트와 호버 클래스(up-state) 적용
+      const clickEvent = isUp ? `onclick="window.open('https://${server}:8082', '_blank')"` : "";
+      const upClass = isUp ? " up-state" : "";
+      const tooltip = isUp ? `${server} 관리자 페이지 열기` : `${server} (오프라인)`;
+      
       html += `
         <li class="tree-node">
-          <div class="proxy-item" title="${server}">
+          <div class="proxy-item${upClass}" title="${tooltip}" ${clickEvent}>
             <span class="status-dot ${statusClass}"></span>
             🌐 ${shortName} ${badge}
           </div>
