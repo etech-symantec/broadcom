@@ -874,87 +874,136 @@ function viewPDF(uniqueId) {
     });
 }
 // ★ 프록시 로그 파싱 및 버튼 렌더링 스크립트 ★
+// 날짜 표기 헬퍼 함수
+function formatDate(date) {
+  const pad = (n) => String(n).padStart(2, '0');
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
+}
+
 function fetchProxyLog() {
-  const container = document.getElementById("treeContainer");
+  // 💡 HTML ID가 treeContainer이든 proxyContainer이든 에러 없이 무조건 찾도록 수정
+  const container = document.getElementById("treeContainer") || document.getElementById("proxyContainer");
   const timeSpan = document.getElementById("proxyTime");
-  
   const refreshBtn = document.querySelector(".refresh-btn");
+  
+  if (!container) {
+    console.error("데이터를 표시할 HTML 컨테이너를 찾을 수 없습니다.");
+    return;
+  }
+
   if (refreshBtn) {
     refreshBtn.innerHTML = "⏳ Loading...";
     refreshBtn.disabled = true;
   }
 
-  const logUrl = `https://raw.githubusercontent.com/etech-symantec/broadcom/main/logs/proxy_8082_check.log?t=${Date.now()}`;
+  // 💡 GitHub Raw 5분 캐시 정책을 완벽히 무시하기 위해 GitHub API 주소를 직접 호출
+  const apiLogUrl = `https://api.github.com/repos/etech-symantec/broadcom/contents/logs/proxy_8082_check.log?t=${Date.now()}`;
   const commitApiUrl = `https://api.github.com/repos/etech-symantec/broadcom/commits?path=logs/proxy_8082_check.log&page=1&per_page=1`;
 
-  fetch(logUrl, { cache: "no-store" }).then(r => r.text()).then(text => {
-    const lines = text.trim().split('\n').filter(l => l.length > 0);
+  // API 헤더에 application/vnd.github.v3.raw 를 주면 파일 내용만 텍스트로 가져옵니다.
+  fetch(apiLogUrl, { 
+    headers: { 'Accept': 'application/vnd.github.v3.raw' },
+    cache: "no-store" 
+  })
+  .then(r => {
+    if (!r.ok) throw new Error("GitHub API 요청 제한이거나 파일을 찾을 수 없습니다.");
+    return r.text();
+  })
+  .then(text => {
+    const lines = text.trim().split('\n').filter(l => l.trim().length > 0);
 
-    // 💡 1. 로그가 비어있을 때 (GitHub API로 커밋 시간 확인)
+    // 💡 1. 로그가 비어있을 때 (오프라인/접속자 없음)
     if (lines.length === 0) {
       fetch(commitApiUrl)
         .then(res => res.json())
         .then(data => {
-          if (data && data.length > 0 && data[0].commit) {
-            const dateObj = new Date(data[0].commit.committer.date);
-            timeSpan.textContent = `(Last Check: ${formatDate(dateObj)})`;
+          if (data && data.length > 0 && data[0].commit && timeSpan) {
+            const d = new Date(data[0].commit.committer.date);
+            timeSpan.textContent = `(Last Check: ${formatDate(d)})`;
           }
         }).catch(() => {});
-      container.innerHTML = '<span style="color:#10b981; font-weight:600;">✅ No active connections found.</span>';
-    } else {
-      // 💡 2. 로그 데이터 파싱
-      const mapping = {};
-      let lastTime = "";
-
-      lines.forEach(line => {
-        const tMatch = line.match(/^(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})/);
-        if (tMatch) lastTime = tMatch[1];
-
-        const sMatch = line.match(/SERVER:(.*?) \[(UP|DOWN)\]/);
-        if (sMatch) {
-          const sIp = sMatch[1].trim();
-          const sStatus = sMatch[2];
-          if (!mapping[sIp]) mapping[sIp] = { status: sStatus, clients: [] };
-
-          const cMatch = line.match(/CLIENT:(.*?)$/);
-          if (cMatch) mapping[sIp].clients.push(cMatch[1].trim());
-        }
-      });
-
-      timeSpan.textContent = `(Last Check: ${lastTime})`;
-      
-      let html = '<ul class="tree-root">';
-      Object.keys(mapping).sort((a, b) => parseInt(a.split('.').pop()) - parseInt(b.split('.').pop()))
-        .forEach(server => {
-          const data = mapping[server];
-          const statusClass = data.status === "UP" ? "status-up" : "status-down";
-          const shortName = server.split('.').pop() + "번"; // 💡 IP 끝자리만 표기
-          
-          // 💡 접속자가 있을 때만 숫자 배지 생성, 오프라인 시 텍스트 생략
-          const badge = (data.status === "UP" && data.clients.length > 0) 
-                        ? `<span class="count">${data.clients.length}</span>` 
-                        : "";
-          
-          html += `
-            <li class="tree-node">
-              <div class="proxy-item" title="${server}">
-                <span class="status-dot ${statusClass}"></span>
-                🌐 ${shortName} 
-                ${badge}
-              </div>
-              <ul class="client-list">`;
-          
-          data.clients.forEach(client => {
-            html += `<li class="client-item">👤 ${client}</li>`;
-          });
-          html += `</ul></li>`;
-        });
-      html += '</ul>';
-      container.innerHTML = html;
+      container.innerHTML = '<span style="color:#10b981; font-weight:600;">✅ 접속 중인 클라이언트가 없습니다.</span>';
+      return;
     }
-  }).finally(() => {
+
+    // 💡 2. 로그 데이터 파싱
+    const mapping = {};
+    let lastTime = "";
+
+    lines.forEach(line => {
+      // 시간 추출
+      const tMatch = line.match(/^(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})/);
+      if (tMatch) lastTime = tMatch[1];
+
+      // Ping 기능이 들어간 최신 형식 (UP/DOWN)
+      const sMatch = line.match(/SERVER:(.*?) \[(UP|DOWN)\]/);
+      // Ping 기능이 없는 예전 형식 하위 호환
+      const oldMatch = line.match(/SERVER:(.*?) - CLIENT:(.*?)$/);
+
+      if (sMatch) {
+        const sIp = sMatch[1].trim();
+        const sStatus = sMatch[2];
+        if (!mapping[sIp]) mapping[sIp] = { status: sStatus, clients: [] };
+        
+        const cMatch = line.match(/CLIENT:(.*?)$/);
+        if (cMatch) mapping[sIp].clients.push(cMatch[1].trim());
+      } else if (oldMatch) {
+        const sIp = oldMatch[1].trim();
+        if (!mapping[sIp]) mapping[sIp] = { status: "UP", clients: [] };
+        mapping[sIp].clients.push(oldMatch[2].trim());
+      }
+    });
+
+    if (timeSpan) timeSpan.textContent = `(Last Check: ${lastTime})`;
+    
+    if (Object.keys(mapping).length === 0) {
+      container.innerHTML = '<span style="color:#64748b; font-weight:600;">⚠️ 처리할 연결 데이터가 없습니다.</span>';
+      return;
+    }
+
+    // 트리 UI 생성
+    let html = '<ul class="tree-root">';
+    
+    // IP 주소 마지막 자리 숫자로 오름차순 정렬
+    Object.keys(mapping).sort((a, b) => parseInt(a.split('.').pop()) - parseInt(b.split('.').pop()))
+      .forEach(server => {
+        const data = mapping[server];
+        const statusClass = data.status === "UP" ? "status-up" : "status-down";
+        
+        // 💡 IP 전체 주소 대신 마지막 숫자 + '번' 표기
+        const shortName = server.split('.').pop() + "번"; 
+        
+        // 접속자가 있을 때만 파란색 숫자 배지 표시
+        const badge = (data.status === "UP" && data.clients.length > 0) 
+                      ? `<span class="count">${data.clients.length}</span>` : "";
+        
+        // 서버 버튼 (마우스를 올리면 타이틀에 원래 IP 주소 표시)
+        html += `
+          <li class="tree-node">
+            <div class="proxy-item" title="${server}">
+              <span class="status-dot ${statusClass}"></span>
+              🌐 ${shortName} 
+              ${badge}
+            </div>
+            <ul class="client-list">`;
+        
+        // 하위 접속자(Client) 목록
+        data.clients.forEach(client => {
+          html += `<li class="client-item">👤 ${client}</li>`;
+        });
+        html += `</ul></li>`;
+      });
+    html += '</ul>';
+    container.innerHTML = html;
+  })
+  .catch(err => {
+    console.error(err);
+    container.innerHTML = '<span style="color:#ef4444; font-weight:600;">❌ 로그를 불러오지 못했습니다. (GitHub API 제한)</span>';
+  })
+  .finally(() => {
+    // 성공/실패 여부와 관계없이 버튼은 다시 원상복구
     if (refreshBtn) {
-      refreshBtn.innerHTML = "🔄 새로고침 (3분마다 업데이트됨)";
+      refreshBtn.innerHTML = "🔄 새로고침 (3분마다 업데이트)";
       refreshBtn.disabled = false;
     }
   });
