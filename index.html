@@ -304,7 +304,7 @@
   
   /* 💡 장비 이름 (중간 줄) 스타일 */
   .proxy-alias { 
-    color: #28396C; 
+    color: #2F2FE4; 
     font-size: 1rem; 
     font-weight: bold; 
     line-height: 1.2;
@@ -983,8 +983,9 @@ function fetchProxyLog() {
       const baseName = server.startsWith("172.16.70.") ? `내부 ${lastOctet}번` : `외부 ${lastOctet}번`;
       
       // 2. 두 번째 줄: P_번호
-      const displayName = (data.name && data.name !== "Unknown") ? data.name : `P_${lastOctet}`;
-      const aliasHtml = `<div class="proxy-alias">${displayName}</div>`;
+      const aliasHtml = (data.name && data.name !== "Unknown") 
+                        ? `<div class="proxy-alias">${data.name}</div>` 
+                        : "";
       
       // 3. 세 번째 줄: 버전 정보 (숫자만 추출된 버전 사용)
       const versionLine = (data.ver && data.ver !== "Unknown") ? `v.${data.ver}` : `v.Unknown`;
