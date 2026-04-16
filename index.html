@@ -298,10 +298,20 @@
   .proxy-item.up-state { cursor: pointer; transition: all 0.2s ease-in-out; }
   .proxy-item.up-state:hover { background: #e2e8f0; border-color: #94a3b8; transform: translateY(-1px); }
 
-  /* 💡 서버 정보 레이아웃 (이름, 버전 분리) */
-  .proxy-info { display: flex; flex-direction: column; gap: 2px; }
-  .proxy-title { display: flex; align-items: center; gap: 4px; }
-  .proxy-version { font-size: 0.65rem; color: #64748b; font-weight: 400; }
+  /* 서버 정보 레이아웃 (3줄 구성을 위해 간격 조정) */
+  .proxy-info { display: flex; flex-direction: column; gap: 0px; }
+  .proxy-title { display: flex; align-items: center; gap: 4px; line-height: 1.2; }
+  
+  /* 💡 P_번호 (중간 줄) 스타일: UP 상태 초록색 적용 */
+  .proxy-alias { 
+    color: #22c55e; 
+    font-size: 0.72rem; 
+    font-weight: bold; 
+    line-height: 1.1;
+    margin-top: 1px;
+  }
+  
+  .proxy-version { font-size: 0.65rem; color: #64748b; font-weight: 400; line-height: 1.1; }
   
   /* 상태 아이콘 (첫 번째 줄 텍스트 높이에 맞춤) */
   .status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; flex-shrink: 0; margin-top: 5px; }
@@ -968,34 +978,33 @@ function fetchProxyLog() {
       const isUp = data.status === "UP";
       const statusClass = isUp ? "status-up" : "status-down";
       
+      // 1. 첫 번째 줄: 내부/외부 번호
       const lastOctet = server.split('.').pop();
-      let baseName = server.startsWith("172.16.70.") ? `내부 ${lastOctet}번` : `외부 ${lastOctet}번`;
+      const baseName = server.startsWith("172.16.70.") ? `내부 ${lastOctet}번` : `외부 ${lastOctet}번`;
       
-      // 💡 장비 이름이 파싱된 경우 (name) 추가
-      if (data.name && data.name !== "Unknown") {
-        baseName += ` (${data.name})`;
-      }
+      // 2. 두 번째 줄: P_번호
+      const aliasHtml = `<div class="proxy-alias">P_${lastOctet}</div>`;
       
+      // 3. 세 번째 줄: 버전 정보 (숫자만 추출된 버전 사용)
+      const versionLine = (data.ver && data.ver !== "Unknown") ? `v.${data.ver}` : `v.Unknown`;
+      const verHtml = `<div class="proxy-version">${versionLine}</div>`;
+
       const badge = (isUp && data.clients.length > 0) 
-                    ? `<span class="count" style="background:#2563eb; color:#fff; padding:1px 6px; border-radius:8px; font-size:0.65rem; margin-left:2px;">${data.clients.length}</span>` 
+                    ? `<span class="count" style="background:#2563eb; color:#fff; padding:1px 5px; border-radius:6px; font-size:0.6rem; margin-left:2px;">${data.clients.length}</span>` 
                     : "";
       
-      // 💡 버전 정보 생성
-      const verHtml = (data.ver && data.ver !== "Unknown")
-                      ? `<div class="proxy-version">v. ${data.ver}</div>`
-                      : `<div class="proxy-version">v. Unknown</div>`;
-
       const clickEvent = isUp ? `onclick="window.open('https://${server}:8082', '_blank')"` : "";
       const upClass = isUp ? " up-state" : "";
       const tooltip = isUp ? `${server} 관리자 페이지 열기` : `${server} (오프라인)`;
       
-      // 💡 두 줄 UI 구성 적용
+      // 💡 3줄 UI 렌더링
       html += `
         <li class="tree-node">
           <div class="proxy-item${upClass}" title="${tooltip}" ${clickEvent}>
             <span class="status-dot ${statusClass}"></span>
             <div class="proxy-info">
-              <div class="proxy-title">🌐 ${baseName}${badge}</div>
+              <div class="proxy-title">${baseName}${badge}</div>
+              ${aliasHtml}
               ${isUp ? verHtml : ''}
             </div>
           </div>
