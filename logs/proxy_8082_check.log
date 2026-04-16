@@ -1,11 +1,11 @@
-2026-04-16 14:00:00 - SERVER:172.16.70.215 - Authentication Failed (All passwords are failed)
-2026-04-16 14:00:00 - SERVER:211.104.20.205 - Authentication Failed (All passwords are failed)
-2026-04-16 14:00:00 - SERVER:172.16.70.218 - Authentication Failed (All passwords are failed)
-2026-04-16 14:00:00 - SERVER:172.16.70.219 - Authentication Failed (All passwords are failed)
-2026-04-16 14:00:00 - SERVER:172.16.70.217 - Authentication Failed (All passwords are failed)
-2026-04-16 14:00:00 - SERVER:172.16.70.214 - Authentication Failed (All passwords are failed)
-2026-04-16 14:00:00 - SERVER:172.16.70.212 - Authentication Failed (All passwords are failed)
-2026-04-16 14:00:00 - SERVER:172.16.70.213 - Authentication Failed (All passwords are failed)
-2026-04-16 14:00:00 - SERVER:172.16.70.216 - Authentication Failed (All passwords are failed)
-2026-04-16 14:00:00 - SERVER:172.16.70.210 - Authentication Failed (All passwords are failed)
-2026-04-16 14:00:00 - SERVER:172.16.70.211 - Authentication Failed (All passwords are failed)
+2026-04-16 14:01:43 - SERVER:172.16.70.215 [UP] - Auth Failed
+2026-04-16 14:01:43 - SERVER:211.104.20.205 [UP] - Auth Failed
+2026-04-16 14:01:43 - SERVER:172.16.70.213 [DOWN]
+2026-04-16 14:01:43 - SERVER:172.16.70.210 [DOWN]
+2026-04-16 14:01:43 - SERVER:172.16.70.211 [DOWN]
+2026-04-16 14:01:43 - SERVER:172.16.70.216 [DOWN]
+2026-04-16 14:01:43 - SERVER:172.16.70.219 [UP] - Auth Failed
+2026-04-16 14:01:43 - SERVER:172.16.70.217 [UP] - Auth Failed
+2026-04-16 14:01:43 - SERVER:172.16.70.218 [UP] - Auth Failed
+2026-04-16 14:01:43 - SERVER:172.16.70.214 [UP] - Auth Failed
+2026-04-16 14:01:43 - SERVER:172.16.70.212 [UP] - Auth Failed
