@@ -276,57 +276,52 @@
   .proxy-dashboard { margin-top: 22px; background: #ffffff; border: 1px solid #e5e7eb; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); padding: 20px; }
   .proxy-dashboard h4 { margin: 0 0 20px; color: #1e3a5f; font-size: 1.1rem; display: flex; align-items: center; justify-content: space-between; }
   
-  /* 💡 서버 노드 컨테이너 (간격 축소) */
+  /* 서버 노드 컨테이너 (간격 축소) */
   .tree-root { 
     display: flex; flex-wrap: nowrap; overflow-x: auto; 
-    gap: 8px; /* 15px -> 8px 대폭 감소 */
-    padding: 10px 5px; margin: 0; list-style: none; align-items: flex-start;
+    gap: 8px; padding: 10px 5px; margin: 0; list-style: none; align-items: flex-start;
     -ms-overflow-style: none; scrollbar-width: none; 
   }
   .tree-root::-webkit-scrollbar { display: none; }
   
-  /* 각 서버 노드는 세로 방향으로 구성 (서버버튼 - 클라이언트리스트) */
-  .tree-node { display: flex; flex-direction: column; min-width: 180px; }
-  
+  /* 각 서버 노드 세로 방향 구성 */
+  .tree-node { display: flex; flex-direction: column; }
   .proxy-item { 
     background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 6px; 
-    padding: 3px 8px; /* 상하 3px, 좌우 8px로 매우 타이트하게 */
+    padding: 4px 8px; /* 여백을 아주 작게 조절 */
     display: inline-flex; align-items: center; gap: 6px; 
     font-size: 0.8rem; font-weight: 600; color: #1e293b; 
-    min-width: auto; white-space: nowrap; box-shadow: 0 1px 3px rgba(0,0,0,0.05); 
+    min-width: auto; /* 💡 기존의 200px 고정 너비 완벽 제거 */
+    white-space: nowrap; box-shadow: 0 1px 3px rgba(0,0,0,0.05); 
     margin-bottom: 4px; z-index: 2; 
   }
-  /* 💡 클릭 가능한 UP 상태 서버 버튼 디자인 (마우스 오버 효과) */
+  /* 클릭 가능한 UP 상태 서버 버튼 디자인 (마우스 오버 효과) */
   .proxy-item.up-state { cursor: pointer; transition: all 0.2s ease-in-out; }
   .proxy-item.up-state:hover { 
     background: #e2e8f0; border-color: #94a3b8; 
     transform: translateY(-1px); box-shadow: 0 4px 6px rgba(0,0,0,0.08); 
   }
-  /* 상태 아이콘(UP/DOWN) */
+  
+  /* 상태 아이콘 크기 축소 */
   .status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
   .status-up { background: #22c55e; box-shadow: 0 0 6px #22c55e; }
   .status-down { background: #ef4444; box-shadow: 0 0 6px #ef4444; }
 
-  /* 트리 세로선: 서버 버튼 중앙에 오도록 여백 조정 */
+  /* 사용자 버튼 및 트리 선 디자인 */
   .client-list { 
     list-style: none; padding: 0 0 0 8px; margin: 0 0 0 12px; 
     border-left: 2px solid #cbd5e1; 
   }
-
-  /* 접속자 버튼 디자인 */
   .client-item { 
-    position: relative; 
-    padding: 2px 6px; /* 아주 얇은 버튼으로 변경 */
-    margin-bottom: 3px; 
+    position: relative; padding: 2px 6px; margin-bottom: 3px; 
     background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 4px; 
     font-size: 0.72rem; color: #166534; display: block; white-space: nowrap; 
   }
-
   .client-item::before { 
     content: ""; position: absolute; left: -8px; top: 50%; 
     width: 8px; height: 2px; background: #cbd5e1; transform: translateY(-50%);
   }
-  
+
   .refresh-btn { background: #e2e8f0; color: #475569; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 0.8rem; font-weight: 600; }
 </style>
 </head>
@@ -949,6 +944,7 @@ function fetchProxyLog() {
     // IP 마지막 자리 숫자를 명확하게 숫자로 변환하여 오름차순 정렬
     let html = '<ul class="tree-root">';
     
+    // IP 마지막 자리 숫자를 기준으로 오름차순 정렬
     const sortedServers = Object.keys(mapping).sort((a, b) => {
       const ipA = parseInt(a.split('.').pop(), 10) || 0;
       const ipB = parseInt(b.split('.').pop(), 10) || 0;
@@ -957,16 +953,20 @@ function fetchProxyLog() {
 
     sortedServers.forEach(server => {
       const data = mapping[server];
-      const isUp = data.status === "UP"; // 💡 UP 상태 여부 확인
-      
+      const isUp = data.status === "UP";
       const statusClass = isUp ? "status-up" : "status-down";
-      const shortName = server.split('.').pop() + "번"; 
       
+      // 💡 IP 대역 확인 후 내부/외부 이름 붙이기
+      const lastOctet = server.split('.').pop();
+      const shortName = server.startsWith("172.16.70.") 
+                        ? `내부 ${lastOctet}번` 
+                        : `외부 ${lastOctet}번`;
+      
+      // 접속자 수 배지 (UP 상태이고 접속자가 있을 때만)
       const badge = (isUp && data.clients.length > 0) 
-                    ? `<span class="count" style="background:#2563eb; color:#fff; padding:1px 6px; border-radius:8px; font-size:0.65rem;">${data.clients.length}</span>` 
+                    ? `<span class="count" style="background:#2563eb; color:#fff; padding:1px 6px; border-radius:8px; font-size:0.65rem; margin-left:2px;">${data.clients.length}</span>` 
                     : "";
       
-      // 💡 UP 상태일 때만 클릭 이벤트와 호버 클래스(up-state) 적용
       const clickEvent = isUp ? `onclick="window.open('https://${server}:8082', '_blank')"` : "";
       const upClass = isUp ? " up-state" : "";
       const tooltip = isUp ? `${server} 관리자 페이지 열기` : `${server} (오프라인)`;
@@ -975,13 +975,14 @@ function fetchProxyLog() {
         <li class="tree-node">
           <div class="proxy-item${upClass}" title="${tooltip}" ${clickEvent}>
             <span class="status-dot ${statusClass}"></span>
-            🌐 ${shortName} ${badge}
+            🌐 ${shortName}${badge}
           </div>
           <ul class="client-list">`;
       
       data.clients.forEach(client => {
         html += `<li class="client-item">👤 ${client}</li>`;
       });
+      
       html += `</ul></li>`;
     });
     
