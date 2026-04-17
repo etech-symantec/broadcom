@@ -370,6 +370,23 @@
   }
 
   .refresh-btn { background: #e2e8f0; color: #475569; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 0.8rem; font-weight: 600; }
+
+  /* 💡 오프라인 상태 노드 50% 축소 */
+  .offline-node {
+    zoom: 0.5; /* 전체 크기를 50%로 축소 (레이아웃 자동 정렬) */
+    opacity: 0.6; /* 약간 투명하게 처리 */
+    filter: grayscale(0.3); /* 색감을 살짝 빼서 비활성화 느낌 강조 */
+  }
+
+  /* 파이어폭스 등 zoom 미지원 브라우저 대응 (선택 사항) */
+  @supports not (zoom: 1) {
+    .offline-node {
+      transform: scale(0.5);
+      transform-origin: top left;
+      margin-right: -100px; /* 축소로 생기는 빈 공간 보정 */
+    }
+  }
+  
 </style>
 </head>
 
@@ -1032,6 +1049,8 @@ function fetchProxyLog() {
       const data = mapping[server];
       const isUp = data.status === "UP";
       const statusClass = isUp ? "status-up" : "status-down";
+      // 💡 오프라인일 경우 축소 클래스 추가
+      const nodeClass = isUp ? "" : " offline-node";
       
       // 1. 첫 번째 줄: 내부/외부 번호
       const lastOctet = server.split('.').pop();
@@ -1076,8 +1095,8 @@ function fetchProxyLog() {
       
       // 💡 3줄 UI 렌더링
       html += `
-        <li class="tree-node">
-          <div class="proxy-item${upClass}" title="${tooltip}" ${clickEvent}>
+        <li class="tree-node${nodeClass}">
+          <div class="proxy-item${upClass}" title="${server}" ${clickEvent}>
             <div style="display:flex; align-items:flex-start; gap:8px;">
               <span class="status-dot ${statusClass}"></span>
               <div class="proxy-info">
