@@ -373,7 +373,7 @@
 
   /* 💡 오프라인 상태 노드 50% 축소 */
   .offline-node {
-    zoom: 0.5; /* 전체 크기를 50%로 축소 (레이아웃 자동 정렬) */
+    zoom: 0.7; /* 전체 크기를 50%로 축소 (레이아웃 자동 정렬) */
     opacity: 0.6; /* 약간 투명하게 처리 */
     filter: grayscale(0.3); /* 색감을 살짝 빼서 비활성화 느낌 강조 */
   }
@@ -381,7 +381,7 @@
   /* 파이어폭스 등 zoom 미지원 브라우저 대응 (선택 사항) */
   @supports not (zoom: 1) {
     .offline-node {
-      transform: scale(0.5);
+      transform: scale(0.7);
       transform-origin: top left;
       margin-right: -100px; /* 축소로 생기는 빈 공간 보정 */
     }
