@@ -315,14 +315,25 @@
     margin-top: 1px;
   }
   
-  /* 💡 하단 스펙 라인 스타일 (v, M, C, 정책#) */
+  /* 💡 하단 스펙 라인 - 태그 레이아웃으로 변경 */
   .proxy-version { 
-    font-size: 0.62rem; /* 0.65rem에서 소폭 축소 */
-    color: #64748b; 
-    font-weight: 400; 
-    line-height: 1.2; 
-    letter-spacing: -0.02em; /* 자간을 줄여 한 줄에 꽉 차게 표시 */
-    margin-top: 1px;
+    display: flex;
+    flex-wrap: wrap; /* 좁은 화면에서 자동으로 아래로 내려감 */
+    gap: 3px;
+    margin-top: 5px;
+  }
+  
+  /* 💡 개별 스펙 태그 스타일 */
+  .spec-tag {
+    background: #f8fafc;
+    border: 1px solid #cbd5e1;
+    border-radius: 4px;
+    padding: 0px 5px;
+    font-size: 0.6rem;
+    color: #475569;
+    font-weight: 500;
+    line-height: 1.5;
+    white-space: nowrap;
   }
   
   /* 상태 아이콘 (첫 번째 줄 텍스트 높이에 맞춤) */
@@ -938,7 +949,6 @@ function fetchProxyLog() {
     refreshBtn.disabled = true;
   }
 
-  // 캐시 방지를 위해 GitHub API 직접 호출
   const apiLogUrl = `https://api.github.com/repos/etech-symantec/broadcom/contents/logs/proxy_8082_check.log?t=${Date.now()}`;
 
   fetch(apiLogUrl, { 
@@ -948,14 +958,19 @@ function fetchProxyLog() {
   .then(r => r.text())
   .then(text => {
     const lines = text.trim().split('\n').filter(l => l.trim().length > 0);
-
     if (lines.length === 0) {
-      container.innerHTML = '<span style="color:#10b981; font-weight:600;">✅ No active connections.</span>';
+      container.innerHTML = '<span style="color:#10b981; font-weight:600;">✅ 접속 중인 클라이언트가 없습니다.</span>';
       return;
     }
-
+    
     const mapping = {};
     let lastTime = "";
+
+    // 💡 데이터 추출 헬퍼 함수 (정규식 매칭 실패 시 빈 값 반환)
+    const extract = (regex, str) => {
+      const match = str.match(regex);
+      return (match && match[1]) ? match[1].trim() : "";
+    };
 
     lines.forEach(line => {
       const tMatch = line.match(/^(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})/);
@@ -965,14 +980,20 @@ function fetchProxyLog() {
       if (sMatch) {
         const sIp = sMatch[1].trim();
         const sStatus = sMatch[2];
-        if (!mapping[sIp]) mapping[sIp] = { status: sStatus, name: "", ver: "", clients: [] };
+        if (!mapping[sIp]) mapping[sIp] = { status: sStatus, name: "", ver: "", ram: "", core: "", pol: "", clients: [] };
 
-        // 💡 장비 이름과 버전 정보 추출
-        const metaMatch = line.match(/\[NAME:(.*?)\] \[VER:(.*?)\]/);
-        if (metaMatch) {
-          mapping[sIp].name = metaMatch[1].trim();
-          mapping[sIp].ver = metaMatch[2].trim();
-        }
+        // 💡 개별 매칭 방식으로 변경하여 안정성 강화
+        const n = extract(/\[NAME:(.*?)\]/, line);
+        const v = extract(/\[VER:(.*?)\]/, line);
+        const r = extract(/\[RAM:(.*?)\]/, line);
+        const c = extract(/\[CORE:(.*?)\]/, line);
+        const p = extract(/\[POL:(.*?)\]/, line);
+
+        if (n) mapping[sIp].name = n;
+        if (v) mapping[sIp].ver = v;
+        if (r) mapping[sIp].ram = r;
+        if (c) mapping[sIp].core = c;
+        if (p) mapping[sIp].pol = p;
 
         const cMatch = line.match(/CLIENT:(.*?)$/);
         if (cMatch) mapping[sIp].clients.push(cMatch[1].trim());
@@ -1008,26 +1029,27 @@ function fetchProxyLog() {
                         ? `<div class="proxy-alias">${data.name}</div>` 
                         : "";
       
-      // 💡 3. 세 번째 줄: 상세 스펙 (v.버전 | M:GB | C:코어 | 정책#:룰수)
-      let specLine = "오프라인";
-      
+      // 💡 하단 스펙 - 요청하신 태그 형식 적용
+      let specHtml = "";
       if (isUp) {
-        const ver = (data.ver && data.ver !== "Unknown") ? `v.${data.ver}` : `v.?`;
-        
-        // RAM 계산: MB를 GB로 변환 (예: 20480 -> 20)
-        let ramGb = "?";
-        if (data.ram && data.ram !== "Unknown") {
-          ramGb = Math.round(parseInt(data.ram) / 1024);
+        const v = (data.ver && data.ver !== "Unknown") ? data.ver : "?";
+        let r = "?";
+        if (data.ram && data.ram !== "Unknown" && !isNaN(data.ram)) {
+          r = Math.round(parseInt(data.ram) / 1024) + "GB";
         }
-        
-        const core = (data.core && data.core !== "Unknown") ? data.core : "?";
-        const pol = (data.pol && data.pol !== "Unknown") ? data.pol : "?";
-        
-        // 💡 요청하신 형식 적용: M: / C: / 정책#:
-        specLine = `${ver} | M:${ramGb}GB | C:${core} | 정책#:${pol}`;
+        const c = (data.core && data.core !== "Unknown") ? data.core : "?";
+        const p = (data.pol && data.pol !== "Unknown") ? data.pol : "?";
+
+        specHtml = `
+          <div class="proxy-version">
+            <span class="spec-tag">v.${v}</span>
+            <span class="spec-tag">M:${r}</span>
+            <span class="spec-tag">C:${c}</span>
+            <span class="spec-tag">정책#:${p}</span>
+          </div>`;
+      } else {
+        specHtml = `<div class="proxy-version"><span class="spec-tag" style="color:#ef4444; border-color:#fca5a5;">OFFLINE</span></div>`;
       }
-      
-      const verHtml = `<div class="proxy-version">${specLine}</div>`;
 
       // 접속자 수 배지
       const badge = (isUp && data.clients.length > 0) 
@@ -1046,7 +1068,7 @@ function fetchProxyLog() {
             <div class="proxy-info">
               <div class="proxy-title">${baseName}${badge}</div>
               ${aliasHtml}
-              ${isUp ? verHtml : ''}
+              ${specHtml}
             </div>
           </div>
           <ul class="client-list">`;
