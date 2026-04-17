@@ -1055,10 +1055,10 @@ function fetchProxyLog() {
 
         specHtml = `
             <div class="proxy-specs-grid">
-            <span class="spec-tag">C:${c}</span>
-            <span class="spec-tag">M:${r}</span>
+            <span class="spec-tag">Core: ${c}</span>
+            <span class="spec-tag">Mem: ${r}</span>
             <span class="spec-tag">v.${v}</span>
-            <span class="spec-tag">정책#:${p}</span>
+            <span class="spec-tag">정책#: ${p}개</span>
           </div>`;
       } else {
                 specHtml = `<div class="proxy-specs-grid" style="display:flex; align-items:center;"><span class="spec-tag" style="color:#ef4444; border-color:#fca5a5; padding:2px 6px;">OFFLINE</span></div>`;
