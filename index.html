@@ -315,7 +315,15 @@
     margin-top: 1px;
   }
   
-  .proxy-version { font-size: 0.65rem; color: #64748b; font-weight: 400; line-height: 1.1; }
+  /* 💡 하단 스펙 라인 스타일 (v, M, C, 정책#) */
+  .proxy-version { 
+    font-size: 0.62rem; /* 0.65rem에서 소폭 축소 */
+    color: #64748b; 
+    font-weight: 400; 
+    line-height: 1.2; 
+    letter-spacing: -0.02em; /* 자간을 줄여 한 줄에 꽉 차게 표시 */
+    margin-top: 1px;
+  }
   
   /* 상태 아이콘 (첫 번째 줄 텍스트 높이에 맞춤) */
   .status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; flex-shrink: 0; margin-top: 5px; }
@@ -995,15 +1003,33 @@ function fetchProxyLog() {
       const lastOctet = server.split('.').pop();
       const baseName = server.startsWith("172.16.70.") ? `내부 ${lastOctet}번` : `외부 ${lastOctet}번`;
       
-      // 2. 두 번째 줄: P_번호
+      // 2. 두 번째 줄: 장비 이름
       const aliasHtml = (data.name && data.name !== "Unknown") 
                         ? `<div class="proxy-alias">${data.name}</div>` 
                         : "";
       
-      // 3. 세 번째 줄: 버전 정보 (숫자만 추출된 버전 사용)
-      const versionLine = (data.ver && data.ver !== "Unknown") ? `v.${data.ver}` : `v.Unknown`;
-      const verHtml = `<div class="proxy-version">${versionLine}</div>`;
+      // 💡 3. 세 번째 줄: 상세 스펙 (v.버전 | M:GB | C:코어 | 정책#:룰수)
+      let specLine = "오프라인";
+      
+      if (isUp) {
+        const ver = (data.ver && data.ver !== "Unknown") ? `v.${data.ver}` : `v.?`;
+        
+        // RAM 계산: MB를 GB로 변환 (예: 20480 -> 20)
+        let ramGb = "?";
+        if (data.ram && data.ram !== "Unknown") {
+          ramGb = Math.round(parseInt(data.ram) / 1024);
+        }
+        
+        const core = (data.core && data.core !== "Unknown") ? data.core : "?";
+        const pol = (data.pol && data.pol !== "Unknown") ? data.pol : "?";
+        
+        // 💡 요청하신 형식 적용: M: / C: / 정책#:
+        specLine = `${ver} | M:${ramGb}GB | C:${core} | 정책#:${pol}`;
+      }
+      
+      const verHtml = `<div class="proxy-version">${specLine}</div>`;
 
+      // 접속자 수 배지
       const badge = (isUp && data.clients.length > 0) 
                     ? `<span class="count" style="background:#2563eb; color:#fff; padding:1px 5px; border-radius:6px; font-size:0.6rem; margin-left:2px;">${data.clients.length}</span>` 
                     : "";
