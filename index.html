@@ -910,6 +910,14 @@ function viewPDF(uniqueId) {
       iframeTitle.textContent = "📄 Broadcom KB Preview"; // 에러 시 복구
     });
 }
+
+// 💡 사용자 IP - 이름 매핑 (여기에 IP와 사용자명을 계속 추가하시면 됩니다!)
+const userMapping = {
+  "172.16.70.220": "테스트 VM PC",
+  "10.82.160.113": "박동석",
+  "10.82.64.34": "신호근"
+};
+  
 // ★ 프록시 로그 파싱 및 버튼 렌더링 스크립트 ★
 function fetchProxyLog() {
   const container = document.getElementById("treeContainer") || document.getElementById("proxyContainer");
@@ -950,7 +958,7 @@ function fetchProxyLog() {
         const sStatus = sMatch[2];
         if (!mapping[sIp]) mapping[sIp] = { status: sStatus, name: "", ver: "", clients: [] };
 
-        // 💡 새 기능: 이름과 버전 정보 추출
+        // 💡 장비 이름과 버전 정보 추출
         const metaMatch = line.match(/\[NAME:(.*?)\] \[VER:(.*?)\]/);
         if (metaMatch) {
           mapping[sIp].name = metaMatch[1].trim();
@@ -1015,16 +1023,23 @@ function fetchProxyLog() {
             </div>
           </div>
           <ul class="client-list">`;
-      
-      data.clients.forEach(client => {
-        html += `<li class="client-item">👤 ${client}</li>`;
-      });
-      html += `</ul></li>`;
-    });
-    
-    html += '</ul>';
-    container.innerHTML = html;
-  })
+          
+          // 💡 사용자 목록 출력 (IP 맵핑 로직 적용)
+          data.clients.forEach(clientIp => {
+            const userName = userMapping[clientIp];
+            
+            // 매핑된 이름이 있으면 진하게 표시하고, 뒤에 연한 회색으로 IP를 덧붙임
+            const displayClient = userName 
+                                  ? `<span style="font-weight:800; color:#15803d;">${userName}</span> <span style="font-size:0.65rem; color:#94a3b8;">(${clientIp})</span>` 
+                                  : clientIp;
+            
+            html += `<li class="client-item">👤 ${displayClient}</li>`;
+          });
+          html += `</ul></li>`;
+        });
+        html += '</ul>';
+        container.innerHTML = html;
+      })
   .finally(() => {
     if (refreshBtn) {
       refreshBtn.innerHTML = "🔄 새로고침 (3분 간격)";
