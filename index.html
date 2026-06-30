@@ -683,9 +683,6 @@ function selectDoc(deviceId, btnElem) {
       <button class="submenu-btn submenu-btn-main submenu-eos">
         <span>⭐ EoL</span>
       </button>
-      <button class="submenu-btn submenu-btn-pdf submenu-pdf">
-        <span>PDF</span>
-      </button>
     </div>
     <div class="submenu-link-row">
       <button class="submenu-btn submenu-link submenu-release">
@@ -732,7 +729,6 @@ function selectDoc(deviceId, btnElem) {
   eosBtn.style.backgroundColor = color;
   eosBtn.style.color = "#fff";
 
-  const pdfBtn       = submenu.querySelector(".submenu-pdf");
   const releaseBtn   = submenu.querySelector(".submenu-release");
   const featuresBtn  = submenu.querySelector(".submenu-features");
   const downloadsBtn = submenu.querySelector(".submenu-downloads");
@@ -744,37 +740,10 @@ function selectDoc(deviceId, btnElem) {
   // 슬라이드 애니메이션
   requestAnimationFrame(() => submenu.classList.add("open"));
 
-  // EoS 문서 → iframe 로딩
+  // EoL 버튼 → Broadcom Product Lifecycle 페이지 새 탭으로 열기
   eosBtn.addEventListener("click", () => {
-    loadDoc(deviceId);
+    window.open("https://support.broadcom.com/group/ecx/productlifecycle", "_blank");
   });
-
-  // PDF 버튼 설정
-  if (cfg.pdfHw && cfg.pdfSw) {
-    // SSLV / PacketShaper : H/W, S/W 두 개로 분리
-    pdfBtn.textContent = "H/W";
-    const pdfBtnSw = pdfBtn.cloneNode(true);
-    pdfBtnSw.textContent = "S/W";
-    pdfBtnSw.classList.add("submenu-pdf-sw");
-    row.appendChild(pdfBtnSw);
-
-    pdfBtn.addEventListener("click", () => {
-      viewPDF(cfg.pdfHw); // 다운로드 대신 뷰어 함수 호출
-    });
-    pdfBtnSw.addEventListener("click", () => {
-      viewPDF(cfg.pdfSw); // 다운로드 대신 뷰어 함수 호출
-    });
-  } else {
-    // 나머지 장비 : 기본 EoS PDF 하나
-    pdfBtn.textContent = "PDF";
-    pdfBtn.addEventListener("click", () => {
-      if (!cfg.eosFileId) {
-        alert("이 장비의 EoS PDF ID가 설정되지 않았습니다.");
-        return;
-      }
-      viewPDF(cfg.eosFileId); // 다운로드 대신 뷰어 함수 호출
-    });
-  }
 
   // 링크 버튼 처리
   releaseBtn.addEventListener("click", ()   => openDocLink(deviceId, "release"));
