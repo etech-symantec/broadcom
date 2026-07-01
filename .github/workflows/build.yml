@@ -5,7 +5,7 @@ on:
   push:
     branches: [main]
     paths:
-      - "data/products.xlsx"
+      - "data/*.xlsx"
       - "scripts/convert.py"
       - "docs/index.html"
   # 필요할 때 수동으로도 실행 가능
