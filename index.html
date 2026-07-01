@@ -3,6 +3,8 @@
 <head>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🌠%3C/text%3E%3C/svg%3E">
 <link rel="stylesheet" href="https://etech-symantec.github.io/style.css" />
+<link href="https://cdnjs.cloudflare.com/ajax/libs/tabulator/5.5.2/css/tabulator.min.css" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/tabulator/5.5.2/js/tabulator.min.js"></script>
 <meta charset="UTF-8">
 
 <!-- Dongle 폰트 + 기본 스타일 유지 -->
@@ -519,6 +521,21 @@
       <div id="placeholder" class="placeholder">확인할 장비를 선택한 후,<br>EoS 문서를 클릭해 주세요.</div>
       <div class="loader" id="loader"></div>
       <iframe id="kbFrame"></iframe>
+
+      <!-- EOL 테이블 패널 -->
+      <div id="eolPanel" style="display:none; position:absolute; inset:0; background:#f8f9fb; overflow:auto; padding:16px; box-sizing:border-box;">
+        <div style="display:flex; gap:8px; margin-bottom:12px; flex-wrap:wrap; align-items:center;">
+          <input id="eolSearch" type="text" placeholder="전체 검색…"
+            style="flex:1; min-width:160px; padding:7px 11px; border:1px solid #d1d5db; border-radius:8px; font-size:0.8rem; background:#fff;">
+          <button onclick="eolTable && eolTable.clearFilter(true) & eolTable.clearHeaderFilter() & (document.getElementById('eolSearch').value='')"
+            style="padding:7px 12px; border:1px solid #d1d5db; border-radius:8px; background:#fff; font-size:0.75rem; cursor:pointer;">초기화</button>
+          <button onclick="eolTable && eolTable.download('csv','lifecycle.csv')"
+            style="padding:7px 12px; border:1px solid #d1d5db; border-radius:8px; background:#fff; font-size:0.75rem; cursor:pointer;">CSV ↓</button>
+          <span id="eolCount" style="font-size:0.75rem; color:#6b7280; margin-left:4px;"></span>
+        </div>
+        <div id="eolTable"></div>
+        <p id="eolError" style="display:none; color:#ef4444; font-size:0.85rem; margin-top:20px; text-align:center;"></p>
+      </div>
     </div>
   </div>
 
@@ -740,9 +757,9 @@ function selectDoc(deviceId, btnElem) {
   // 슬라이드 애니메이션
   requestAnimationFrame(() => submenu.classList.add("open"));
 
-  // EoL 버튼 → Broadcom Product Lifecycle 페이지 새 탭으로 열기
+  // EoL 버튼 → 우측 패널에 테이블 표시
   eosBtn.addEventListener("click", () => {
-    window.open("https://support.broadcom.com/group/ecx/productlifecycle", "_blank");
+    showEolTable(deviceId, color);
   });
 
   // 링크 버튼 처리
@@ -857,6 +874,7 @@ function openKB() {
 
 /* Release / Features / Downloads 새창 */
 function openDocLink(deviceId, type) {
+  hideEolPanel();
   const cfg = deviceConfig[deviceId] || {};
   const url = cfg[type];
 
@@ -869,6 +887,7 @@ function openDocLink(deviceId, type) {
 
 /* GitHub 내부의 PDF를 가져와서 iframe에 띄우기 */
 function viewPDF(uniqueId) {
+  hideEolPanel();
   if (!uniqueId) return;
 
   const iframe = document.getElementById("kbFrame");
@@ -1109,6 +1128,168 @@ function formatDate(date) {
 }
 
 document.addEventListener("DOMContentLoaded", fetchProxyLog);
+
+/* =========================================================
+   EOL 테이블 - showEolTable(deviceId, accentColor)
+   data.json을 fetch해서 우측 패널에 Tabulator 테이블로 표시
+   ========================================================= */
+let eolTable = null;
+let eolDataCache = null;   // 한 번 받은 JSON을 재사용
+
+const DATE_COLS = ["General Availability", "End of Service", "End of Life", "Stabilization Date"];
+
+function lifecycleStatus(eolStr) {
+  if (!eolStr) return { key: "unknown", label: "N/A" };
+  const eol = new Date(eolStr);
+  if (isNaN(eol)) return { key: "unknown", label: "N/A" };
+  const now = new Date();
+  const soon = new Date(); soon.setMonth(now.getMonth() + 6);
+  if (eol < now)  return { key: "eol",  label: "EOL" };
+  if (eol < soon) return { key: "soon", label: "EOL Soon" };
+  return { key: "ok", label: "Active" };
+}
+
+function showEolTable(deviceId, accentColor) {
+  const panel      = document.getElementById("eolPanel");
+  const iframe     = document.getElementById("kbFrame");
+  const loader     = document.getElementById("loader");
+  const placeholder= document.getElementById("placeholder");
+  const titleEl    = document.getElementById("iframeTitle");
+  const linkBtn    = document.getElementById("kbLinkBtn");
+  const errEl      = document.getElementById("eolError");
+
+  // 헤더 상태 업데이트
+  titleEl.textContent = "📋 Product Lifecycle 테이블";
+  linkBtn.disabled = false;
+  linkBtn.onclick = () =>
+    window.open("https://support.broadcom.com/group/ecx/productlifecycle", "_blank");
+
+  // 패널 전환
+  placeholder.style.display = "none";
+  loader.style.display      = "none";
+  iframe.style.display      = "none";
+  errEl.style.display       = "none";
+  panel.style.display       = "block";
+
+  // 이미 캐시된 데이터가 있으면 바로 필터만 적용
+  if (eolDataCache) {
+    applyDeviceFilter(deviceId, accentColor);
+    return;
+  }
+
+  // data.json 로드
+  fetch("data.json")
+    .then(r => { if (!r.ok) throw new Error("data.json 로드 실패 (" + r.status + ")"); return r.json(); })
+    .then(payload => {
+      eolDataCache = payload;
+      buildEolTable(payload, deviceId, accentColor);
+    })
+    .catch(err => {
+      errEl.textContent = "⚠️ " + err.message;
+      errEl.style.display = "block";
+    });
+}
+
+function buildEolTable(payload, deviceId, accentColor) {
+  const columns = payload.columns || [];
+  const records = payload.records || [];
+
+  // 상태 컬럼 + 데이터 컬럼 정의
+  const colDefs = [
+    {
+      title: "Status", field: "_status", width: 100,
+      headerFilter: "select",
+      headerFilterParams: { values: { "": "전체", "eol": "EOL", "soon": "EOL Soon", "ok": "Active", "unknown": "N/A" } },
+      headerFilterFunc: (v, _, rowData) => !v || lifecycleStatus(rowData["End of Life"]).key === v,
+      formatter: cell => {
+        const s = lifecycleStatus(cell.getData()["End of Life"]);
+        const colors = { eol: ["#fde8e8","#b91c1c"], soon: ["#fef3c7","#92400e"], ok: ["#d1fae5","#065f46"], unknown: ["#f3f4f6","#6b7280"] };
+        const [bg, fg] = colors[s.key] || colors.unknown;
+        return `<span style="background:${bg};color:${fg};padding:2px 8px;border-radius:4px;font-size:0.7rem;font-weight:700;">${s.label}</span>`;
+      },
+      sorter: (a, b, aRow, bRow) => {
+        const o = {eol:0, soon:1, ok:2, unknown:3};
+        return o[lifecycleStatus(aRow.getData()["End of Life"]).key] - o[lifecycleStatus(bRow.getData()["End of Life"]).key];
+      }
+    },
+    ...columns.map(col => ({
+      title: col, field: col,
+      headerFilter: "input", headerFilterPlaceholder: "필터…",
+      sorter: DATE_COLS.includes(col) ? "date" : "string",
+      sorterParams: DATE_COLS.includes(col) ? { format: "yyyy-MM-dd" } : undefined,
+      formatter: DATE_COLS.includes(col) ? cell => cell.getValue() || "—" : undefined,
+      minWidth: DATE_COLS.includes(col) ? 120 : 130,
+    }))
+  ];
+
+  if (eolTable) { eolTable.destroy(); eolTable = null; }
+
+  eolTable = new Tabulator("#eolTable", {
+    data: records,
+    columns: colDefs,
+    layout: "fitDataStretch",
+    pagination: true,
+    paginationSize: 20,
+    paginationSizeSelector: [10, 20, 50, true],
+    initialSort: [{ column: "_status", dir: "asc" }],
+    placeholder: "데이터가 없습니다",
+    rowFormatter: row => {
+      const s = lifecycleStatus(row.getData()["End of Life"]);
+      if (s.key === "eol")  row.getElement().style.background = "#fff8f8";
+      if (s.key === "soon") row.getElement().style.background = "#fffef0";
+    },
+  });
+
+  // 행 수 업데이트
+  eolTable.on("dataFiltered", data => {
+    document.getElementById("eolCount").textContent = data.length + "건";
+  });
+  document.getElementById("eolCount").textContent = records.length + "건";
+
+  // 전체 검색창 연결
+  const searchInput = document.getElementById("eolSearch");
+  searchInput.oninput = e => {
+    const term = e.target.value.trim();
+    eolTable.clearFilter();
+    if (term) eolTable.setFilter(data =>
+      Object.values(data).some(v => String(v ?? "").toLowerCase().includes(term.toLowerCase()))
+    );
+  };
+
+  applyDeviceFilter(deviceId, accentColor);
+}
+
+// deviceId에 맞게 Product 컬럼을 자동 필터링
+const DEVICE_KEYWORDS = {
+  isg:          "ISG",
+  proxysg:      "ProxySG",
+  casma:        "Content Analysis",
+  mc:           "Management Center",
+  reporter:     "Reporter",
+  sslv:         "SSL Visibility",
+  packetshaper: "PacketShaper",
+};
+
+function applyDeviceFilter(deviceId, accentColor) {
+  if (!eolTable) return;
+  const kw = DEVICE_KEYWORDS[deviceId];
+  eolTable.clearFilter(true);
+  document.getElementById("eolSearch").value = "";
+  if (kw) {
+    eolTable.setFilter(data =>
+      Object.values(data).some(v => String(v ?? "").toLowerCase().includes(kw.toLowerCase()))
+    );
+    document.getElementById("eolSearch").value = kw;
+  }
+  // 헤더 강조색 반영
+  document.documentElement.style.setProperty("--eol-accent", accentColor || "#1e3a5f");
+}
+
+// 다른 버튼 클릭 시 테이블 패널 숨기고 iframe 복원
+function hideEolPanel() {
+  const panel = document.getElementById("eolPanel");
+  if (panel) panel.style.display = "none";
+}
 </script>
 
 </body>
