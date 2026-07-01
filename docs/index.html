@@ -1262,13 +1262,28 @@ function buildEolTable(payload, deviceId, accentColor) {
       }
     },
     ...columns.map(col => {
-      // 고유값 목록 수집 → 드롭다운 필터
-      const uniqueVals = [...new Set(records.map(r => r[col] ?? "").filter(v => v !== ""))].sort();
-      const selectVals = {"": "전체", ...Object.fromEntries(uniqueVals.map(v => [v, v]))};
+      // 고유값 목록 수집 → datalist 자동완성 ID
+      const listId = "dl-" + col.replace(/[^a-zA-Z0-9]/g, "_");
+      const uniqueVals = [...new Set(records.map(r => String(r[col] ?? "")).filter(v => v !== ""))].sort();
+
+      // datalist 생성 (없으면 새로 만들어 body에 추가)
+      if (!document.getElementById(listId)) {
+        const dl = document.createElement("datalist");
+        dl.id = listId;
+        uniqueVals.forEach(v => {
+          const opt = document.createElement("option");
+          opt.value = v;
+          dl.appendChild(opt);
+        });
+        document.body.appendChild(dl);
+      }
+
       return {
         title: col, field: col,
-        headerFilter: "select",
-        headerFilterParams: { values: selectVals },
+        headerFilter: "input",
+        headerFilterPlaceholder: "검색/선택…",
+        headerFilterParams: { list: listId },
+        headerFilterFunc: "like",
         sorter: DATE_COLS.includes(col) ? "date" : "string",
         sorterParams: DATE_COLS.includes(col) ? { format: "yyyy-MM-dd" } : undefined,
         formatter: DATE_COLS.includes(col) ? cell => cell.getValue() || "—" : undefined,
@@ -1298,6 +1313,22 @@ function buildEolTable(payload, deviceId, accentColor) {
   });
 
   // 행 수 업데이트
+  // 테이블 렌더 완료 후 각 헤더 필터 input에 datalist 연결
+  eolTable.on("tableBuilt", () => {
+    columns.forEach(col => {
+      const listId = "dl-" + col.replace(/[^a-zA-Z0-9]/g, "_");
+      const headerCells = document.querySelectorAll("#eolTable .tabulator-header .tabulator-col");
+      headerCells.forEach(cell => {
+        if (cell.getAttribute("tabulator-field") === col) {
+          const input = cell.querySelector("input");
+          if (input && document.getElementById(listId)) {
+            input.setAttribute("list", listId);
+          }
+        }
+      });
+    });
+  });
+
   eolTable.on("dataFiltered", data => {
     document.getElementById("eolCount").textContent = data.length + "건";
   });
