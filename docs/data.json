@@ -1,0 +1,102 @@
+{
+  "generated_at": "2026-06-30T06:53:57Z",
+  "columns": [
+    "Business Unit",
+    "Product",
+    "Description",
+    "Release",
+    "Release Level Info",
+    "OS",
+    "General Availability",
+    "End of Service",
+    "End of Life",
+    "Stabilization Date"
+  ],
+  "row_count": 7,
+  "records": [
+    {
+      "Business Unit": "Cyber Security Software",
+      "Product": "SSP-S210 PLATFORM",
+      "Description": "SSP-S210 PLATFORM",
+      "Release": "ISG 2.4.7.1",
+      "Release Level Info": "ISG 2.4.7.1",
+      "OS": "",
+      "General Availability": "2023-06-01",
+      "End of Service": "2025-11-21",
+      "End of Life": "2025-11-21",
+      "Stabilization Date": ""
+    },
+    {
+      "Business Unit": "Cyber Security Software",
+      "Product": "SSP-S210 PLATFORM",
+      "Description": "SSP-S210 PLATFORM",
+      "Release": "ISG 2.4.6.1",
+      "Release Level Info": "ISG 2.4.6.1",
+      "OS": "",
+      "General Availability": "2023-02-16",
+      "End of Service": "2025-11-21",
+      "End of Life": "2025-11-21",
+      "Stabilization Date": ""
+    },
+    {
+      "Business Unit": "Cyber Security Software",
+      "Product": "SSP-S210 PLATFORM",
+      "Description": "SSP-S210 PLATFORM",
+      "Release": "ISG 2.4.5.4",
+      "Release Level Info": "0",
+      "OS": "",
+      "General Availability": "2023-01-12",
+      "End of Service": "2023-02-28",
+      "End of Life": "2023-02-28",
+      "Stabilization Date": "2023-01-12"
+    },
+    {
+      "Business Unit": "Cyber Security Software",
+      "Product": "SSP-S210 PLATFORM",
+      "Description": "SSP-S210 PLATFORM",
+      "Release": "ISG 2.4.5.3",
+      "Release Level Info": "0",
+      "OS": "",
+      "General Availability": "2022-12-18",
+      "End of Service": "2023-01-31",
+      "End of Life": "2023-01-31",
+      "Stabilization Date": "2022-12-18"
+    },
+    {
+      "Business Unit": "Cyber Security Software",
+      "Product": "SSP-S210 PLATFORM",
+      "Description": "SSP-S210 PLATFORM",
+      "Release": "ISG 2.4.5.2",
+      "Release Level Info": "0",
+      "OS": "",
+      "General Availability": "2022-12-13",
+      "End of Service": "2023-01-31",
+      "End of Life": "2023-01-31",
+      "Stabilization Date": "2022-12-13"
+    },
+    {
+      "Business Unit": "Cyber Security Software",
+      "Product": "SSP-S210 PLATFORM",
+      "Description": "SSP-S210 PLATFORM",
+      "Release": "ISG 2.4.3.3",
+      "Release Level Info": "0",
+      "OS": "",
+      "General Availability": "2022-08-08",
+      "End of Service": "2022-09-30",
+      "End of Life": "2022-09-30",
+      "Stabilization Date": "2021-08-05"
+    },
+    {
+      "Business Unit": "Cyber Security Software",
+      "Product": "SSP-S210 PLATFORM",
+      "Description": "SSP-S210 PLATFORM",
+      "Release": "ISG 2.4.3.2",
+      "Release Level Info": "0",
+      "OS": "",
+      "General Availability": "2022-07-28",
+      "End of Service": "2022-08-31",
+      "End of Life": "2022-08-31",
+      "Stabilization Date": "2021-08-05"
+    }
+  ]
+}

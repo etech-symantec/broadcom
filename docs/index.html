@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Product Lifecycle Tracker</title>
+
+<link href="https://cdnjs.cloudflare.com/ajax/libs/tabulator/5.5.2/css/tabulator.min.css" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/tabulator/5.5.2/js/tabulator.min.js"></script>
+
+<style>
+  :root {
+    --ink: #1a1d23;
+    --paper: #f6f5f2;
+    --panel: #ffffff;
+    --line: #e3e1db;
+    --accent: #c4501f;
+    --accent-soft: #f1e3d8;
+    --good: #2e6b4f;
+    --good-soft: #e3efe8;
+    --warn: #b5860a;
+    --warn-soft: #f7eed8;
+    --bad: #b3332b;
+    --bad-soft: #f8e4e1;
+    --mono: 'IBM Plex Mono', 'SFMono-Regular', Consolas, monospace;
+    --sans: 'IBM Plex Sans', -apple-system, 'Segoe UI', sans-serif;
+  }
+
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--sans);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 40px 28px 64px;
+  }
+
+  header.page-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 24px;
+    border-bottom: 2px solid var(--ink);
+    padding-bottom: 18px;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+  }
+
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: 12px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin: 0 0 6px;
+  }
+
+  h1 {
+    font-size: 28px;
+    font-weight: 700;
+    margin: 0;
+    letter-spacing: -0.01em;
+  }
+
+  .meta {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: #6b6b66;
+    text-align: right;
+  }
+
+  .meta span { display: block; }
+
+  .stat-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 1px;
+    background: var(--line);
+    border: 1px solid var(--line);
+    margin-bottom: 28px;
+  }
+
+  .stat {
+    background: var(--panel);
+    padding: 14px 18px;
+  }
+
+  .stat .n {
+    font-family: var(--mono);
+    font-size: 22px;
+    font-weight: 600;
+  }
+
+  .stat .l {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #6b6b66;
+    margin-top: 2px;
+  }
+
+  .stat.eol .n { color: var(--bad); }
+  .stat.soon .n { color: var(--warn); }
+  .stat.ok .n { color: var(--good); }
+
+  .toolbar {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 14px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  #global-search {
+    flex: 1;
+    min-width: 220px;
+    padding: 10px 14px;
+    border: 1px solid var(--line);
+    background: var(--panel);
+    font-family: var(--sans);
+    font-size: 14px;
+    color: var(--ink);
+  }
+
+  #global-search:focus {
+    outline: none;
+    border-color: var(--accent);
+  }
+
+  .btn {
+    padding: 10px 16px;
+    border: 1px solid var(--ink);
+    background: var(--panel);
+    color: var(--ink);
+    font-family: var(--mono);
+    font-size: 12px;
+    letter-spacing: 0.04em;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+
+  .btn:hover { background: var(--ink); color: var(--paper); }
+
+  #status-line {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: #6b6b66;
+    margin-bottom: 10px;
+  }
+
+  #table-wrap {
+    border: 1px solid var(--line);
+    background: var(--panel);
+  }
+
+  /* ---- Tabulator overrides ---- */
+  .tabulator {
+    font-family: var(--sans);
+    font-size: 13.5px;
+    background: var(--panel);
+    border: none;
+  }
+
+  .tabulator .tabulator-header {
+    background: var(--ink);
+    color: var(--paper);
+    border: none;
+  }
+
+  .tabulator .tabulator-header .tabulator-col {
+    background: var(--ink);
+    border-right: 1px solid #33363c;
+  }
+
+  .tabulator .tabulator-header .tabulator-col-title {
+    font-family: var(--mono);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 500;
+  }
+
+  .tabulator-header-filter input,
+  .tabulator-header-filter select {
+    font-family: var(--sans);
+    font-size: 12px;
+    border: 1px solid #4a4d54;
+    background: #2a2d33;
+    color: var(--paper);
+    padding: 4px 6px;
+  }
+
+  .tabulator-header-filter input::placeholder { color: #9a9d a4; }
+
+  .tabulator-row {
+    border-bottom: 1px solid var(--line);
+  }
+
+  .tabulator-row.tabulator-row-even {
+    background: #fbfaf8;
+  }
+
+  .tabulator-row:hover {
+    background: var(--accent-soft) !important;
+  }
+
+  .tabulator .tabulator-footer {
+    background: var(--panel);
+    border-top: 1px solid var(--line);
+    font-family: var(--mono);
+    font-size: 12px;
+  }
+
+  .tabulator .tabulator-footer .tabulator-page {
+    font-family: var(--mono);
+    font-size: 12px;
+    border: 1px solid var(--line);
+    background: var(--panel);
+  }
+
+  .tabulator .tabulator-footer .tabulator-page.active {
+    background: var(--ink);
+    color: var(--paper);
+  }
+
+  .status-pill {
+    display: inline-block;
+    padding: 2px 9px;
+    border-radius: 2px;
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+  }
+
+  .status-eol { background: var(--bad-soft); color: var(--bad); }
+  .status-soon { background: var(--warn-soft); color: var(--warn); }
+  .status-ok { background: var(--good-soft); color: var(--good); }
+  .status-unknown { background: #ececea; color: #80807a; }
+
+  footer.note {
+    margin-top: 18px;
+    font-family: var(--mono);
+    font-size: 11.5px;
+    color: #8a8a84;
+  }
+
+  @media (max-width: 640px) {
+    header.page-head { flex-direction: column; align-items: flex-start; }
+    .meta { text-align: left; }
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header class="page-head">
+    <div>
+      <p class="eyebrow">Lifecycle Registry</p>
+      <h1>Product Lifecycle Tracker</h1>
+    </div>
+    <div class="meta">
+      <span id="generated-at">generated: —</span>
+      <span id="row-count">rows: —</span>
+    </div>
+  </header>
+
+  <div class="stat-row" id="stat-row">
+    <div class="stat ok"><div class="n" id="stat-ok">—</div><div class="l">Active</div></div>
+    <div class="stat soon"><div class="n" id="stat-soon">—</div><div class="l">EOL within 6mo</div></div>
+    <div class="stat eol"><div class="n" id="stat-eol">—</div><div class="l">End of Life</div></div>
+    <div class="stat"><div class="n" id="stat-products">—</div><div class="l">Products</div></div>
+  </div>
+
+  <div class="toolbar">
+    <input id="global-search" type="text" placeholder="전체 검색 (제품명, 릴리즈, 빌드 번호 등)…">
+    <button class="btn" id="clear-filters">필터 초기화</button>
+    <button class="btn" id="export-csv">CSV 내보내기</button>
+  </div>
+
+  <div id="status-line">불러오는 중…</div>
+
+  <div id="table-wrap">
+    <div id="product-table"></div>
+  </div>
+
+  <footer class="note">data/products.xlsx → GitHub Actions → docs/data.json · 컬럼 헤더 클릭 시 정렬, 헤더 아래 입력창에서 컬럼별 필터링</footer>
+</div>
+
+<script>
+const DATE_COLS = ["General Availability", "End of Service", "End of Life", "Stabilization Date"];
+
+function parseDate(v) {
+  if (!v) return null;
+  const d = new Date(v);
+  return isNaN(d.getTime()) ? null : d;
+}
+
+function lifecycleStatus(eolStr) {
+  const eol = parseDate(eolStr);
+  if (!eol) return { key: "unknown", label: "N/A" };
+  const now = new Date();
+  const sixMonths = new Date();
+  sixMonths.setMonth(now.getMonth() + 6);
+  if (eol < now) return { key: "eol", label: "EOL" };
+  if (eol < sixMonths) return { key: "soon", label: "EOL Soon" };
+  return { key: "ok", label: "Active" };
+}
+
+function statusFormatter(cell) {
+  const eol = cell.getData()["End of Life"];
+  const s = lifecycleStatus(eol);
+  return `<span class="status-pill status-${s.key}">${s.label}</span>`;
+}
+
+function dateFormatter(cell) {
+  const v = cell.getValue();
+  return v ? v : "—";
+}
+
+fetch("data.json")
+  .then(r => {
+    if (!r.ok) throw new Error("data.json을 불러올 수 없습니다 (" + r.status + ")");
+    return r.json();
+  })
+  .then(payload => {
+    document.getElementById("generated-at").textContent = "generated: " + (payload.generated_at || "—");
+    document.getElementById("row-count").textContent = "rows: " + payload.row_count;
+    document.getElementById("status-line").textContent = `총 ${payload.row_count}건 로드 완료`;
+
+    const records = payload.records || [];
+    const columns = payload.columns || [];
+
+    // 통계 계산
+    let ok = 0, soon = 0, eol = 0;
+    const products = new Set();
+    records.forEach(r => {
+      const s = lifecycleStatus(r["End of Life"]);
+      if (s.key === "ok") ok++;
+      else if (s.key === "soon") soon++;
+      else if (s.key === "eol") eol++;
+      if (r["Product"]) products.add(r["Product"]);
+    });
+    document.getElementById("stat-ok").textContent = ok;
+    document.getElementById("stat-soon").textContent = soon;
+    document.getElementById("stat-eol").textContent = eol;
+    document.getElementById("stat-products").textContent = products.size;
+
+    // Tabulator 컬럼 정의: data.json의 columns를 그대로 따라가되
+    // 날짜 컬럼은 정렬기를, 첫 컬럼 자리에는 상태 배지를 추가
+    const tabulatorColumns = [
+      {
+        title: "Status",
+        field: "_status",
+        width: 110,
+        headerFilter: "select",
+        headerFilterParams: { values: { "": "전체", "eol": "EOL", "soon": "EOL Soon", "ok": "Active", "unknown": "N/A" } },
+        headerFilterFunc: (filterVal, rowVal, rowData) => {
+          if (!filterVal) return true;
+          return lifecycleStatus(rowData["End of Life"]).key === filterVal;
+        },
+        formatter: statusFormatter,
+        sorter: (a, b, aRow, bRow) => {
+          const order = { eol: 0, soon: 1, ok: 2, unknown: 3 };
+          const sa = lifecycleStatus(aRow.getData()["End of Life"]).key;
+          const sb = lifecycleStatus(bRow.getData()["End of Life"]).key;
+          return order[sa] - order[sb];
+        }
+      },
+      ...columns.map(col => {
+        const isDate = DATE_COLS.includes(col);
+        return {
+          title: col,
+          field: col,
+          headerFilter: "input",
+          headerFilterPlaceholder: "필터…",
+          sorter: isDate ? "date" : "string",
+          sorterParams: isDate ? { format: "yyyy-MM-dd" } : undefined,
+          formatter: isDate ? dateFormatter : undefined,
+          minWidth: isDate ? 130 : 140,
+        };
+      })
+    ];
+
+    const table = new Tabulator("#product-table", {
+      data: records,
+      columns: tabulatorColumns,
+      layout: "fitDataStretch",
+      pagination: true,
+      paginationSize: 25,
+      paginationSizeSelector: [10, 25, 50, 100, true],
+      placeholder: "표시할 데이터가 없습니다",
+      initialSort: [{ column: "_status", dir: "asc" }],
+    });
+
+    document.getElementById("global-search").addEventListener("input", function (e) {
+      const term = e.target.value.trim();
+      if (!term) {
+        table.clearFilter();
+        return;
+      }
+      table.setFilter(function (data) {
+        return Object.values(data).some(v =>
+          String(v ?? "").toLowerCase().includes(term.toLowerCase())
+        );
+      });
+    });
+
+    document.getElementById("clear-filters").addEventListener("click", function () {
+      table.clearFilter(true);
+      table.clearHeaderFilter();
+      document.getElementById("global-search").value = "";
+    });
+
+    document.getElementById("export-csv").addEventListener("click", function () {
+      table.download("csv", "product-lifecycle.csv");
+    });
+  })
+  .catch(err => {
+    document.getElementById("status-line").textContent = "오류: " + err.message;
+    document.getElementById("status-line").style.color = "#b3332b";
+  });
+</script>
+
+</body>
+</html>
