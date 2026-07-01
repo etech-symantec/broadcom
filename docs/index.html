@@ -399,19 +399,25 @@
     background: transparent;
     border: none;
     padding: 0;
-    flex-wrap: wrap;
-    gap: 4px;
+    flex-wrap: nowrap;
+    gap: 3px;
     align-items: center;
+    justify-content: flex-end;
   }
-  #eolPaginationBar .tabulator-paginator { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
-  #eolPaginationBar .tabulator-page-size { font-size: 0.75rem; padding: 3px 6px; border: 1px solid #d1d5db; border-radius: 6px; background: #fff; }
+  #eolPaginationBar .tabulator-paginator {
+    display: flex; flex-wrap: nowrap; gap: 3px; align-items: center; justify-content: flex-end;
+  }
+  #eolPaginationBar .tabulator-page-size {
+    font-size: 0.72rem; padding: 3px 5px;
+    border: 1px solid #d1d5db; border-radius: 6px; background: #fff;
+  }
   #eolPaginationBar .tabulator-page {
-    font-size: 0.72rem; padding: 3px 8px;
-    border: 1px solid #d1d5db; border-radius: 6px; background: #fff; cursor: pointer;
+    font-size: 0.7rem; padding: 3px 7px;
+    border: 1px solid #d1d5db; border-radius: 6px; background: #fff; cursor: pointer; white-space: nowrap;
   }
   #eolPaginationBar .tabulator-page.active { background: #1e3a5f; color: #fff; border-color: #1e3a5f; }
   #eolPaginationBar .tabulator-page:disabled { opacity: 0.35; cursor: default; }
-  #eolPaginationBar .tabulator-pages { display: flex; gap: 3px; flex-wrap: wrap; }
+  #eolPaginationBar .tabulator-pages { display: flex; gap: 3px; flex-wrap: nowrap; }
 
   /* 스크롤 영역 안의 Tabulator: 헤더 sticky */
   #eolTable .tabulator-header { position: sticky; top: 0; z-index: 10; }
@@ -551,19 +557,17 @@
 
       <!-- EOL 테이블 패널 -->
       <div id="eolPanel" style="display:none; position:absolute; inset:0; background:#f8f9fb; display:none; flex-direction:column; box-sizing:border-box; overflow:hidden;">
-        <!-- 고정 툴바 -->
-        <div style="flex-shrink:0; padding:10px 14px 0; background:#f8f9fb; border-bottom:1px solid #e5e7eb;">
-          <div style="display:flex; gap:8px; margin-bottom:8px; flex-wrap:wrap; align-items:center;">
-            <input id="eolSearch" type="text" placeholder="전체 검색…"
-              style="flex:1; min-width:160px; padding:6px 11px; border:1px solid #d1d5db; border-radius:8px; font-size:0.8rem; background:#fff;">
-            <button onclick="eolTable && eolTable.clearFilter(true) & eolTable.clearHeaderFilter() & (document.getElementById('eolSearch').value='')"
-              style="padding:6px 12px; border:1px solid #d1d5db; border-radius:8px; background:#fff; font-size:0.75rem; cursor:pointer;">초기화</button>
-            <button onclick="eolTable && eolTable.download('csv','lifecycle.csv')"
-              style="padding:6px 12px; border:1px solid #d1d5db; border-radius:8px; background:#fff; font-size:0.75rem; cursor:pointer;">CSV ↓</button>
-            <span id="eolCount" style="font-size:0.75rem; color:#6b7280; margin-left:2px;"></span>
-          </div>
-          <!-- pagination 이동 자리 (Tabulator footer를 JS로 여기로 이동) -->
-          <div id="eolPaginationBar" style="margin-bottom:6px;"></div>
+        <!-- 고정 툴바: 검색+버튼+pagination 한 줄 -->
+        <div style="flex-shrink:0; padding:8px 12px; background:#f8f9fb; border-bottom:1px solid #e5e7eb; display:flex; gap:6px; align-items:center; flex-wrap:nowrap; overflow:hidden;">
+          <input id="eolSearch" type="text" placeholder="전체 검색…"
+            style="width:140px; flex-shrink:0; padding:5px 9px; border:1px solid #d1d5db; border-radius:7px; font-size:0.78rem; background:#fff;">
+          <button onclick="eolTable && eolTable.clearFilter(true) & eolTable.clearHeaderFilter() & (document.getElementById('eolSearch').value='')"
+            style="flex-shrink:0; padding:5px 10px; border:1px solid #d1d5db; border-radius:7px; background:#fff; font-size:0.72rem; cursor:pointer; white-space:nowrap;">초기화</button>
+          <button onclick="eolTable && eolTable.download('csv','lifecycle.csv')"
+            style="flex-shrink:0; padding:5px 10px; border:1px solid #d1d5db; border-radius:7px; background:#fff; font-size:0.72rem; cursor:pointer; white-space:nowrap;">CSV ↓</button>
+          <span id="eolCount" style="flex-shrink:0; font-size:0.72rem; color:#6b7280;"></span>
+          <!-- pagination을 같은 줄 우측에 배치 -->
+          <div id="eolPaginationBar" style="flex:1; display:flex; justify-content:flex-end; align-items:center; min-width:0; overflow:hidden;"></div>
         </div>
         <!-- 스크롤 영역: 헤더 필터 + 데이터 행 -->
         <div style="flex:1; overflow:auto; min-height:0;">
@@ -1194,10 +1198,10 @@ function showEolTable(deviceId, accentColor) {
   const errEl      = document.getElementById("eolError");
 
   // 헤더 상태 업데이트
-  titleEl.textContent = "📋 Product Lifecycle 테이블";
+  titleEl.innerHTML = "📋 Product Lifecycle 테이블";
   // 날짜는 데이터 로드 후 업데이트 (캐시 있으면 즉시)
   if (eolDataCache && eolDataCache.generated_at) {
-    titleEl.textContent = "📋 Product Lifecycle 테이블  |  업데이트: " + eolDataCache.generated_at.slice(0,10);
+    titleEl.innerHTML = '📋 Product Lifecycle 테이블 <span style="font-size:0.7rem;font-weight:400;color:#94c4e8;margin-left:6px;">업데이트: ' + eolDataCache.generated_at.slice(0,10) + '</span>';
   }
   linkBtn.disabled = false;
   linkBtn.onclick = () =>
@@ -1236,7 +1240,7 @@ function buildEolTable(payload, deviceId, accentColor) {
   // 헤더 타이틀에 날짜 반영
   const titleEl = document.getElementById("iframeTitle");
   if (titleEl && payload.generated_at) {
-    titleEl.textContent = "📋 Product Lifecycle 테이블  |  업데이트: " + payload.generated_at.slice(0,10);
+    titleEl.innerHTML = '📋 Product Lifecycle 테이블 <span style="font-size:0.7rem;font-weight:400;color:#94c4e8;margin-left:6px;">업데이트: ' + payload.generated_at.slice(0,10) + '</span>';
   }
 
   // 상태 컬럼 + 데이터 컬럼 정의
@@ -1257,14 +1261,20 @@ function buildEolTable(payload, deviceId, accentColor) {
         return o[lifecycleStatus(aRow.getData()["End of Life"]).key] - o[lifecycleStatus(bRow.getData()["End of Life"]).key];
       }
     },
-    ...columns.map(col => ({
-      title: col, field: col,
-      headerFilter: "input", headerFilterPlaceholder: "필터…",
-      sorter: DATE_COLS.includes(col) ? "date" : "string",
-      sorterParams: DATE_COLS.includes(col) ? { format: "yyyy-MM-dd" } : undefined,
-      formatter: DATE_COLS.includes(col) ? cell => cell.getValue() || "—" : undefined,
-      minWidth: DATE_COLS.includes(col) ? 120 : 130,
-    }))
+    ...columns.map(col => {
+      // 고유값 목록 수집 → 드롭다운 필터
+      const uniqueVals = [...new Set(records.map(r => r[col] ?? "").filter(v => v !== ""))].sort();
+      const selectVals = {"": "전체", ...Object.fromEntries(uniqueVals.map(v => [v, v]))};
+      return {
+        title: col, field: col,
+        headerFilter: "select",
+        headerFilterParams: { values: selectVals },
+        sorter: DATE_COLS.includes(col) ? "date" : "string",
+        sorterParams: DATE_COLS.includes(col) ? { format: "yyyy-MM-dd" } : undefined,
+        formatter: DATE_COLS.includes(col) ? cell => cell.getValue() || "—" : undefined,
+        minWidth: DATE_COLS.includes(col) ? 120 : 130,
+      };
+    })
   ];
 
   if (eolTable) { eolTable.destroy(); eolTable = null; }
