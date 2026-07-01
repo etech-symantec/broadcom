@@ -389,6 +389,33 @@
     }
   }
   
+
+  /* ---- EOL 테이블 패널: Tabulator 기본 footer 숨김 (pagination을 상단으로 이동) ---- */
+  #eolTable .tabulator-footer { display: none !important; }
+
+  /* 상단 pagination bar 안의 Tabulator footer 스타일 재활용 */
+  #eolPaginationBar .tabulator-footer {
+    display: flex !important;
+    background: transparent;
+    border: none;
+    padding: 0;
+    flex-wrap: wrap;
+    gap: 4px;
+    align-items: center;
+  }
+  #eolPaginationBar .tabulator-paginator { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
+  #eolPaginationBar .tabulator-page-size { font-size: 0.75rem; padding: 3px 6px; border: 1px solid #d1d5db; border-radius: 6px; background: #fff; }
+  #eolPaginationBar .tabulator-page {
+    font-size: 0.72rem; padding: 3px 8px;
+    border: 1px solid #d1d5db; border-radius: 6px; background: #fff; cursor: pointer;
+  }
+  #eolPaginationBar .tabulator-page.active { background: #1e3a5f; color: #fff; border-color: #1e3a5f; }
+  #eolPaginationBar .tabulator-page:disabled { opacity: 0.35; cursor: default; }
+  #eolPaginationBar .tabulator-pages { display: flex; gap: 3px; flex-wrap: wrap; }
+
+  /* 스크롤 영역 안의 Tabulator: 헤더 sticky */
+  #eolTable .tabulator-header { position: sticky; top: 0; z-index: 10; }
+  #eolTable .tabulator { border: none; }
 </style>
 </head>
 
@@ -523,18 +550,26 @@
       <iframe id="kbFrame"></iframe>
 
       <!-- EOL 테이블 패널 -->
-      <div id="eolPanel" style="display:none; position:absolute; inset:0; background:#f8f9fb; overflow:auto; padding:16px; box-sizing:border-box;">
-        <div style="display:flex; gap:8px; margin-bottom:12px; flex-wrap:wrap; align-items:center;">
-          <input id="eolSearch" type="text" placeholder="전체 검색…"
-            style="flex:1; min-width:160px; padding:7px 11px; border:1px solid #d1d5db; border-radius:8px; font-size:0.8rem; background:#fff;">
-          <button onclick="eolTable && eolTable.clearFilter(true) & eolTable.clearHeaderFilter() & (document.getElementById('eolSearch').value='')"
-            style="padding:7px 12px; border:1px solid #d1d5db; border-radius:8px; background:#fff; font-size:0.75rem; cursor:pointer;">초기화</button>
-          <button onclick="eolTable && eolTable.download('csv','lifecycle.csv')"
-            style="padding:7px 12px; border:1px solid #d1d5db; border-radius:8px; background:#fff; font-size:0.75rem; cursor:pointer;">CSV ↓</button>
-          <span id="eolCount" style="font-size:0.75rem; color:#6b7280; margin-left:4px;"></span>
+      <div id="eolPanel" style="display:none; position:absolute; inset:0; background:#f8f9fb; display:none; flex-direction:column; box-sizing:border-box; overflow:hidden;">
+        <!-- 고정 툴바 -->
+        <div style="flex-shrink:0; padding:10px 14px 0; background:#f8f9fb; border-bottom:1px solid #e5e7eb;">
+          <div style="display:flex; gap:8px; margin-bottom:8px; flex-wrap:wrap; align-items:center;">
+            <input id="eolSearch" type="text" placeholder="전체 검색…"
+              style="flex:1; min-width:160px; padding:6px 11px; border:1px solid #d1d5db; border-radius:8px; font-size:0.8rem; background:#fff;">
+            <button onclick="eolTable && eolTable.clearFilter(true) & eolTable.clearHeaderFilter() & (document.getElementById('eolSearch').value='')"
+              style="padding:6px 12px; border:1px solid #d1d5db; border-radius:8px; background:#fff; font-size:0.75rem; cursor:pointer;">초기화</button>
+            <button onclick="eolTable && eolTable.download('csv','lifecycle.csv')"
+              style="padding:6px 12px; border:1px solid #d1d5db; border-radius:8px; background:#fff; font-size:0.75rem; cursor:pointer;">CSV ↓</button>
+            <span id="eolCount" style="font-size:0.75rem; color:#6b7280; margin-left:2px;"></span>
+          </div>
+          <!-- pagination 이동 자리 (Tabulator footer를 JS로 여기로 이동) -->
+          <div id="eolPaginationBar" style="margin-bottom:6px;"></div>
         </div>
-        <div id="eolTable"></div>
-        <p id="eolError" style="display:none; color:#ef4444; font-size:0.85rem; margin-top:20px; text-align:center;"></p>
+        <!-- 스크롤 영역: 헤더 필터 + 데이터 행 -->
+        <div style="flex:1; overflow:auto; min-height:0;">
+          <div id="eolTable"></div>
+        </div>
+        <p id="eolError" style="display:none; color:#ef4444; font-size:0.85rem; margin-top:20px; text-align:center; padding:0 14px;"></p>
       </div>
     </div>
   </div>
@@ -1173,7 +1208,7 @@ function showEolTable(deviceId, accentColor) {
   loader.style.display      = "none";
   iframe.style.display      = "none";
   errEl.style.display       = "none";
-  panel.style.display       = "block";
+  panel.style.display       = "flex";
 
   // 이미 캐시된 데이터가 있으면 바로 필터만 적용
   if (eolDataCache) {
@@ -1238,9 +1273,11 @@ function buildEolTable(payload, deviceId, accentColor) {
     data: records,
     columns: colDefs,
     layout: "fitDataStretch",
+    height: "100%",
     pagination: true,
     paginationSize: 20,
     paginationSizeSelector: [10, 20, 50, true],
+    paginationElement: document.getElementById("eolPaginationBar"),
     initialSort: [{ column: "_status", dir: "asc" }],
     placeholder: "데이터가 없습니다",
     rowFormatter: row => {
