@@ -1160,6 +1160,10 @@ function showEolTable(deviceId, accentColor) {
 
   // 헤더 상태 업데이트
   titleEl.textContent = "📋 Product Lifecycle 테이블";
+  // 날짜는 데이터 로드 후 업데이트 (캐시 있으면 즉시)
+  if (eolDataCache && eolDataCache.generated_at) {
+    titleEl.textContent = "📋 Product Lifecycle 테이블  |  업데이트: " + eolDataCache.generated_at.slice(0,10);
+  }
   linkBtn.disabled = false;
   linkBtn.onclick = () =>
     window.open("https://support.broadcom.com/group/ecx/productlifecycle", "_blank");
@@ -1193,6 +1197,12 @@ function showEolTable(deviceId, accentColor) {
 function buildEolTable(payload, deviceId, accentColor) {
   const columns = payload.columns || [];
   const records = payload.records || [];
+
+  // 헤더 타이틀에 날짜 반영
+  const titleEl = document.getElementById("iframeTitle");
+  if (titleEl && payload.generated_at) {
+    titleEl.textContent = "📋 Product Lifecycle 테이블  |  업데이트: " + payload.generated_at.slice(0,10);
+  }
 
   // 상태 컬럼 + 데이터 컬럼 정의
   const colDefs = [
@@ -1261,8 +1271,8 @@ function buildEolTable(payload, deviceId, accentColor) {
 
 // deviceId에 맞게 Product 컬럼을 자동 필터링
 const DEVICE_KEYWORDS = {
-  isg:          "ISG",
-  proxysg:      "ProxySG",
+  isg:          "SSP",
+  proxysg:      "ISG Proxy",
   casma:        "Content Analysis",
   mc:           "Management Center",
   reporter:     "Reporter",
