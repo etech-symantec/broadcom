@@ -1,0 +1,1502 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🌠%3C/text%3E%3C/svg%3E">
+<link rel="stylesheet" href="https://etech-symantec.github.io/style.css" />
+<link href="https://cdnjs.cloudflare.com/ajax/libs/tabulator/5.5.2/css/tabulator.min.css" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/tabulator/5.5.2/js/tabulator.min.js"></script>
+<meta charset="UTF-8">
+
+<!-- Dongle 폰트 + 기본 스타일 유지 -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Do+Hyeon&display=swap" rel="stylesheet">
+
+<title>브로드컴 문서 뷰어 & 다운로드</title>
+
+<style>
+  /* ---------- 전체 2단 레이아웃 ---------- */
+  .layout {
+    display: flex;
+    gap: 22px;
+    margin-top: 14px;
+  }
+
+  /* ---------- 좌측 패널 ---------- */
+  .left-card {
+    width: 220px;
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    padding: 10px 16px 22px 16px;
+  }
+
+  .left-card h4 {
+    margin: 0 0 8px;
+    color: #1e3a5f;
+    font-size: 1rem;
+    display: flex;
+    align-items: center;
+  }
+
+  /* ---------- 메인 장비 버튼 ---------- */
+  .doc-btn {
+    width: 100%;
+    padding: 10px 8px;
+    margin-bottom: 6px;
+    font-size: 0.8rem;
+    background: #e2e8f0;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    font-weight: 600;
+    text-align: left;
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    transition: background 0.2s, transform 0.15s;
+    --btn-color: #2563eb;
+  }
+
+  .doc-btn:hover {
+    background: #cbd5e1;
+    transform: translateY(-2px);
+  }
+
+  .doc-btn.active {
+    background: var(--btn-color) !important;
+    color: white;
+  }
+
+  .doc-btn svg {
+    width: 18px;
+    height: 18px;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    fill: none;
+    opacity: 0.9;
+    transition: 0.25s;
+  }
+
+  .doc-btn.active svg {
+    stroke: #fff;
+  }
+
+  /* Hover Glow */
+  .doc-btn:hover svg {
+    filter: drop-shadow(0 0 6px var(--btn-color));
+    transform: scale(1.08);
+  }
+
+  /* ---------- 서브메뉴 컨테이너 ---------- */
+  .submenu-container {
+    margin: 2px 0 10px 6px;
+    padding: 8px 8px 9px 8px;
+    border-radius: 10px;
+    border: 1px solid #cbd5e1;
+    background: rgba(148,163,184,0.08);
+    overflow: hidden;
+    max-height: 0;
+    opacity: 0;
+    transform: translateY(-4px);
+    transition: all 0.22s ease-out;
+    font-size: 0.7rem;
+  }
+
+  .submenu-container.open {
+    max-height: 260px;
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .submenu-row {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 6px;
+  }
+
+  .submenu-btn {
+    flex: 1;
+    padding: 7px 8px;
+    font-size: 0.7rem;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: space-between;
+    background: #e5e7eb;
+    color: #111827;
+    transition: background 0.18s, transform 0.12s, box-shadow 0.12s;
+    white-space: nowrap;
+  }
+
+  .submenu-btn:hover {
+    background: #e0e7ff;
+    transform: translateY(-0.5px);
+    box-shadow: 0 1px 3px rgba(15,23,42,0.18);
+  }
+
+  .submenu-btn-main {
+    flex: 1.4;
+  }
+
+  .submenu-btn-pdf {
+    flex: 0.9;
+    background: #cc0d2f;
+    color: #fff;
+    padding: 7px 8px;
+  }
+
+  .submenu-btn-pdf:hover {
+    background: #950a23;
+  }
+
+  .submenu-link-row {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .submenu-link-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .submenu-link-text {
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* ↗ 아이콘 배경 원 */
+  .submenu-link-icon-wrap {
+    width: 18px;
+    height: 18px;
+    border-radius: 999px;
+    background: rgba(15,23,42,0.08);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .submenu-link-icon {
+    width: 10px;
+    height: 10px;
+    transition: transform 0.18s ease-out;
+  }
+
+  .submenu-btn:hover .submenu-link-icon {
+    transform: rotate(25deg);
+  }
+  
+  .submenu-pdf-sw {
+      flex: 1;
+      min-width: 20%;     /* 두 개를 한 row에 고정 */
+      max-width: 50%;
+      padding: 6px 6px;   /* 가로 패딩 줄임 */
+      font-size: 0.67rem; /* 글자 크기 감소 */
+  }
+
+
+  /* ---------- 우측 iframe 카드 ---------- */
+  .right-card {
+    flex: 1;
+    background: #ffffff;
+    border-radius: 14px;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.08);
+    padding-bottom: 6px;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .iframe-header {
+    background: #1e3a5f;
+    color: white;
+    padding: 8px 20px;
+    border-radius: 14px 14px 0 0;
+
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .kb-link-btn {
+    background: #cc0d2f;
+    color: white;
+    border: none;
+    padding: 4px 8px;
+    border-radius: 8px;
+    font-size: 0.65rem;
+    cursor: pointer;
+  }
+
+  .kb-link-btn:disabled {
+    opacity: 0.4;
+    cursor: default;
+  }
+
+  .iframe-wrapper {
+    position: relative;
+    height: 700px;
+    background: #f3f4f6;
+    border-radius: 0 0 14px 14px;
+  }
+
+  iframe {
+    width: 100%;
+    height: 100%;
+    border: none;
+    display: none;
+  }
+
+  .loader {
+    position: absolute;
+    top: 50%; left: 50%;
+    width: 44px; height: 44px;
+    transform: translate(-50%, -50%);
+    border: 4px solid #dcdcdc;
+    border-top: 4px solid #1e3a5f;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    display: none;
+  }
+  @keyframes spin { to { transform: translate(-50%, -50%) rotate(360deg); } }
+
+  .placeholder {
+    position: absolute;
+    top: 20%; left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 1.1rem;
+    color: #6b7280;
+    text-align: center;
+  }
+
+  /* ---------- Proxy Horizontal-Tree Dashboard ---------- */
+  .proxy-dashboard { margin-top: 22px; background: #ffffff; border: 1px solid #e5e7eb; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); padding: 20px; }
+  .proxy-dashboard h4 { margin: 0 0 20px; color: #1e3a5f; font-size: 1.1rem; display: flex; align-items: center; justify-content: space-between; }
+  
+  /* 💡 서버 노드 컨테이너 (화면이 좁아지면 자동으로 줄바꿈) */
+  .tree-root { 
+    display: flex; 
+    flex-wrap: wrap; /* 💡 nowrap을 wrap으로 변경하여 공간이 부족하면 아래로 떨어지게 함 */
+    gap: 8px; 
+    padding: 10px 5px; 
+    margin: 0; 
+    list-style: none; 
+    align-items: flex-start;
+  }
+  .tree-root::-webkit-scrollbar { display: none; }
+  
+  /* 각 서버 노드 세로 방향 구성 */
+  .tree-node { display: flex; flex-direction: column; }
+  /* 💡 서버 버튼 - 내부 요소를 좌우로 분리하기 위해 수정 */
+  .proxy-item { 
+    background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 6px; 
+    padding: 6px 12px; 
+    display: inline-flex; align-items: center; /* 전체 세로 중앙 정렬 */
+    justify-content: space-between; gap: 6px; 
+    font-size: 0.8rem; font-weight: 600; color: #1e293b; 
+    min-width: auto; white-space: nowrap; box-shadow: 0 1px 3px rgba(0,0,0,0.05); 
+    margin-bottom: 4px; z-index: 2; 
+  }
+  .proxy-item.up-state { cursor: pointer; transition: all 0.2s ease-in-out; }
+  .proxy-item.up-state:hover { background: #e2e8f0; border-color: #94a3b8; transform: translateY(-1px); box-shadow: 0 4px 6px rgba(0,0,0,0.08); }
+
+  /* 💡 우측 스펙 2x2 그리드 레이아웃 */
+  .proxy-specs-grid {
+    display: grid;
+    grid-template-columns: auto auto; /* 2열 */
+    grid-template-rows: auto auto;    /* 2행 */
+    gap: 4px 6px; /* 행 간격 4px, 열 간격 6px */
+    margin-left: 6px;
+    padding-left: 12px;
+    border-left: 1px solid #cbd5e1; /* 좌측 정보와 구분하는 연한 세로선 */
+  }
+  
+  /* 개별 스펙 태그 디자인 */
+  .spec-tag {
+    background: #ffffff;
+    border: 1px solid #cbd5e1;
+    border-radius: 4px;
+    padding: 1px 5px;
+    font-size: 0.62rem;
+    color: #475569;
+    font-weight: 600;
+    line-height: 1.2;
+    white-space: nowrap;
+    text-align: center;
+  }
+
+  /* 서버 정보 레이아웃 (3줄 구성을 위해 간격 조정) */
+  .proxy-info { display: flex; flex-direction: column; gap: 0px; }
+  .proxy-title { display: flex; align-items: center; gap: 4px; line-height: 1.2; }
+  
+  /* 💡 장비 이름 (중간 줄) 스타일 */
+  .proxy-alias { 
+    color: #2F2FE4; 
+    font-size: 1rem; 
+    font-weight: bold; 
+    line-height: 1.2;
+    margin-top: 1px;
+  }
+  
+  /* 💡 하단 스펙 라인 - 태그 레이아웃으로 변경 */
+  .proxy-version { 
+    display: flex;
+    flex-wrap: wrap; /* 좁은 화면에서 자동으로 아래로 내려감 */
+    gap: 3px;
+    margin-top: 5px;
+  }
+  
+  /* 상태 아이콘 (첫 번째 줄 텍스트 높이에 맞춤) */
+  .status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; flex-shrink: 0; margin-top: 5px; }
+  .status-up { background: #22c55e; box-shadow: 0 0 6px #22c55e; }
+  .status-down { background: #ef4444; box-shadow: 0 0 6px #ef4444; }
+
+  /* 사용자 버튼 및 트리 선 디자인 */
+  .client-list { 
+    list-style: none; padding: 0 0 0 8px; margin: 0 0 0 12px; 
+    border-left: 2px solid #cbd5e1; 
+  }
+  .client-item { 
+    position: relative; padding: 2px 6px; margin-bottom: 3px; 
+    background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 4px; 
+    font-size: 0.72rem; color: #166534; display: block; white-space: nowrap; 
+  }
+  .client-item::before { 
+    content: ""; position: absolute; left: -8px; top: 50%; 
+    width: 8px; height: 2px; background: #cbd5e1; transform: translateY(-50%);
+  }
+
+  .refresh-btn { background: #e2e8f0; color: #475569; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 0.8rem; font-weight: 600; }
+
+  /* 💡 오프라인 상태 노드 50% 축소 */
+  .offline-node {
+    zoom: 0.7; /* 전체 크기를 50%로 축소 (레이아웃 자동 정렬) */
+    opacity: 0.6; /* 약간 투명하게 처리 */
+    filter: grayscale(0.3); /* 색감을 살짝 빼서 비활성화 느낌 강조 */
+  }
+
+  /* 파이어폭스 등 zoom 미지원 브라우저 대응 (선택 사항) */
+  @supports not (zoom: 1) {
+    .offline-node {
+      transform: scale(0.7);
+      transform-origin: top left;
+      margin-right: -100px; /* 축소로 생기는 빈 공간 보정 */
+    }
+  }
+  
+
+  /* ---- EOL 테이블 패널: Tabulator 기본 footer 숨김 (pagination을 상단으로 이동) ---- */
+  #eolTable .tabulator-footer { display: none !important; }
+
+  /* 상단 pagination bar 안의 Tabulator footer 스타일 재활용 */
+  #eolPaginationBar .tabulator-footer {
+    display: flex !important;
+    background: transparent;
+    border: none;
+    padding: 0;
+    flex-wrap: nowrap;
+    gap: 3px;
+    align-items: center;
+    justify-content: flex-end;
+  }
+  #eolPaginationBar .tabulator-paginator {
+    display: flex; flex-wrap: nowrap; gap: 3px; align-items: center; justify-content: flex-end;
+  }
+  #eolPaginationBar .tabulator-page-size {
+    font-size: 0.72rem; padding: 3px 5px;
+    border: 1px solid #d1d5db; border-radius: 6px; background: #fff;
+  }
+  #eolPaginationBar .tabulator-page {
+    font-size: 0.7rem; padding: 3px 7px;
+    border: 1px solid #d1d5db; border-radius: 6px; background: #fff; cursor: pointer; white-space: nowrap;
+  }
+  #eolPaginationBar .tabulator-page.active { background: #1e3a5f; color: #fff; border-color: #1e3a5f; }
+  #eolPaginationBar .tabulator-page:disabled { opacity: 0.35; cursor: default; }
+  #eolPaginationBar .tabulator-pages { display: flex; gap: 3px; flex-wrap: nowrap; }
+
+  /* 스크롤 영역 안의 Tabulator: 헤더 sticky */
+  #eolTable .tabulator-header { position: sticky; top: 0; z-index: 10; }
+  #eolTable .tabulator { border: none; }
+</style>
+</head>
+
+<body>
+<!-- 공통 헤더 + 제목 + 버전 -->
+<script>
+  window.pageTitle = "브로드컴 링크";
+  window.pageVersion = "ver.2026.4.15.01";
+</script> 
+<script src="https://etech-symantec.github.io/header.js"></script>
+  
+<div class="layout">
+
+  <!-- 좌측 UI -->
+  <div class="left-card">
+    <h4>📥 장비 선택</h4>
+    
+    <!-- ISG -->
+    <button class="doc-btn" onclick="selectDoc('isg', this)" data-color="#FACC15">
+      <svg viewBox="0 0 24 24">
+        <rect x="3" y="4" width="18" height="14" rx="2" stroke="currentColor" stroke-width="1.6" fill="none"/>
+        <rect x="6" y="7" width="5" height="4" rx="1" fill="currentColor" opacity="0.7"/>
+        <rect x="13" y="7" width="5" height="4" rx="1" fill="currentColor" opacity="0.7"/>
+        <rect x="6" y="13" width="12" height="4" rx="1" fill="currentColor" opacity="0.4"/>
+      </svg>
+      ISG
+    </button>
+
+
+    <!-- ProxySG -->
+    <button class="doc-btn" onclick="selectDoc('proxysg', this)" data-color="#2563eb">
+      <svg viewBox="0 0 24 24">
+        <rect x="3" y="5" width="18" height="14" rx="2"></rect>
+        <circle cx="8" cy="12" r="2.4"></circle>
+      </svg>
+      ProxySG
+    </button>
+    
+    <!-- CAS/MA -->
+    <button class="doc-btn" onclick="selectDoc('casma', this)" data-color="#10b981">
+      <svg viewBox="0 0 24 24">
+        <path d="M4 4h8l4 4v12H4z"></path>
+        <circle cx="14" cy="10" r="2.2"></circle>
+      </svg>
+      CA / MA
+    </button>
+    
+    <!-- MC -->
+    <button class="doc-btn" onclick="selectDoc('mc', this)" data-color="#8b5cf6">
+      <svg viewBox="0 0 24 24">
+        <circle cx="12" cy="12" r="3"></circle>
+        <path d="M12 2v3M12 19v3M4 12h3M17 12h3M5 5l2 2M17 17l2 2M5 19l2-2M17 7l2-2"/>
+      </svg>
+      Management Center
+    </button>
+    
+    <!-- Reporter -->
+    <button class="doc-btn" onclick="selectDoc('reporter', this)" data-color="#f59e0b">
+      <svg viewBox="0 0 24 24">
+        <rect x="4" y="10" width="3" height="8" rx="1"></rect>
+        <rect x="10" y="6" width="3" height="12" rx="1"></rect>
+        <rect x="16" y="4" width="3" height="14" rx="1"></rect>
+      </svg>
+      Reporter
+    </button>
+    
+    <!-- SSLV (통합) -->
+    <button class="doc-btn" onclick="selectDoc('sslv', this)" data-color="#3b82f6">
+      <svg viewBox="0 0 24 24">
+        <path d="M6 10V7a6 6 0 1112 0v3"></path>
+        <rect x="6" y="10" width="12" height="10" rx="2"></rect>
+      </svg>
+      SSL Visibility
+    </button>
+    
+    <!-- PacketShaper (통합) -->
+    <button class="doc-btn" onclick="selectDoc('packetshaper', this)" data-color="#0ea5e9">
+      <svg viewBox="0 0 24 24">
+        <path d="M3 15c3-6 6 6 9 0s6 6 9 0" stroke-width="2" fill="none"></path>
+      </svg>
+      PacketShaper
+    </button>
+
+    <hr style="border:0; border-top:1px solid #d1d5db; margin: 14px 0;">
+
+    <!-- 서브메뉴는 JS에서 동적으로 삽입 -->
+    
+    <!-- Divider -->
+<hr style="border:0; border-top:1px solid #d1d5db; margin: 14px 0;">
+
+<!-- Entitlement 검색 버튼 -->
+<button class="doc-btn" onclick="window.open('https://support.broadcom.com/group/ecx/products', '_blank')" 
+        style="background:#70B2B2; color:white; justify-content:center; font-size:0.78rem;">
+  🔍 Entitlement 검색
+</button>
+
+<!-- Product Lifecycle 검색 버튼 -->
+<button class="doc-btn" onclick="window.open('https://support.broadcom.com/group/ecx/productlifecycle', '_blank')" 
+        style="background:#FF9898; color:white; justify-content:center; font-size:0.78rem;">
+  🔍 Product Lifecycle 검색
+</button>
+
+<!-- KB Cloud 검색 버튼 -->
+<button class="doc-btn" onclick="window.open('https://support.broadcom.com/web/ecx/search?searchString=&activeType=knowledge_articles_doc&from=0&sortby=post_time&orderBy=desc&pageNo=1&aggregations=%5B%7B%22type%22%3A%22_type%22%2C%22filter%22%3A%5B%22knowledge_articles_doc%22%5D%7D%2C%7B%22type%22%3A%22productname%22%2C%22filter%22%3A%5B%22Cloud+Secure+Web+Gateway%22%2C%22Cloud+Secure+Web+Gateway+-+Cloud+SWG%22%2C%22WSS+add-on+-+Self+Managed+Certificate%22%2C%22WSS+add-on+-+Malware+Analysis+Standard%22%2C%22WSS+add-on+-+Cloud+Firewall+Service+Standard%22%2C%22WSS+add-on+-+Cloud+Firewall+Service+Advanced%22%2C%22WSS+add-on+-+Intelligence+Services+Advanced%22%2C%22WSS+add-on+-+All+Traffic+Pass-Through%22%2C%22WSS+add-on+-+Hosted+Reporting%22%2C%22WSS+add-on+-+Selective+Isolation%22%2C%22WSS+add-on+-+Full+Isolation%22%2C%22WSS+add-on+-+Malware+Analysis+Advanced%22%2C%22Web+Security+Service+-+WSS%22%2C%22Cloud+Portal%22%2C%22Web+Isolation+Cloud%22%5D%7D%5D&uid=d042dbba-f8c4-11ea-beba-0242ac12000b&resultsPerPage=10&exactPhrase=&withOneOrMore=&withoutTheWords=&pageSize=10&language=en&suCaseCreate=false', '_blank')" 
+        style="background:#89D4FF; color:white; justify-content:center; font-size:0.78rem;">
+  🔍 KB Cloud 검색
+</button>
+
+<!-- KB Edge 검색 버튼 -->
+<button class="doc-btn" onclick="window.open('https://support.broadcom.com/web/ecx/search?searchString=&activeType=knowledge_articles_doc&from=0&sortby=post_time&orderBy=desc&pageNo=1&aggregations=%5B%7B%22type%22%3A%22_type%22%2C%22filter%22%3A%5B%22knowledge_articles_doc%22%5D%7D%2C%7B%22type%22%3A%22productname%22%2C%22filter%22%3A%5B%22SWG+VA-100%22%2C%22Edge+Secure+Web+Gateway%22%2C%22SG-S200-40%22%2C%22SG-VA%22%2C%22SG-S500-RP%22%2C%22SG-S400-RP%22%2C%22SG-S200-RP%22%2C%22SG-S200%22%2C%22SG-S400%22%2C%22SG-S500%22%2C%22ISG+Proxy%22%2C%22ProxySG%22%2C%22ProxySG+Software+-+SGOS%22%2C%22Intelligence+Services%22%2C%22SG-810-5%22%2C%22SG-810-25%22%2C%22SG-810-10%22%2C%22SG-810-20%22%2C%22SG-510%22%2C%22SG-810%22%2C%22SG-600%22%2C%22SG-900%22%2C%22SG-300%22%2C%22SG-9000%22%2C%22Advanced+Secure+Gateway+Software+-+ASG%22%2C%22ASG-S400%22%2C%22ASG-S200%22%2C%22ASG-S500%22%2C%22ISG+Content+Analysis%22%2C%22SGVA%22%2C%22MAA-S500%22%2C%22MAA-S400%22%2C%22Malware+Analysis%22%2C%22Malware+Analysis+Software+-+MA%22%2C%22CAS-S200%22%2C%22CAS-VA%22%2C%22CAS-S500%22%2C%22CAS-S400%22%2C%22Content+Analysis+Software%22%2C%22Content+Analysis+Software+-+CA%22%2C%22Content+Analysis%22%5D%7D%5D&uid=d042dbba-f8c4-11ea-beba-0242ac12000b&resultsPerPage=10&exactPhrase=&withOneOrMore=&withoutTheWords=&pageSize=10&language=en&suCaseCreate=false', '_blank')" 
+        style="background:#44ACFF; color:white; justify-content:center; font-size:0.78rem;">
+  🔍 KB Edge 검색
+</button>
+    
+<!-- Sysinfo 분석툴 버튼 -->
+<button class="doc-btn" onclick="window.open('https://diag.symantec.com/#!/welcome', '_blank')" 
+        style="background:#FFC300; color:white; justify-content:center; font-size:0.78rem;">
+  🔬 Sysinfo 분석툴
+</button>
+  </div>
+
+  <!-- 우측 iframe 영역 -->
+  <div class="right-card">
+    <div class="iframe-header">
+        <span id="iframeTitle">📄 Broadcom KB Preview</span>
+        <button class="kb-link-btn" id="kbLinkBtn" onclick="openKB()" disabled>🔗 원본 페이지</button>
+      </div>
+
+    <div class="iframe-wrapper">
+      <div id="placeholder" class="placeholder">확인할 장비를 선택한 후,<br>EoS 문서를 클릭해 주세요.</div>
+      <div class="loader" id="loader"></div>
+      <iframe id="kbFrame"></iframe>
+
+      <!-- EOL 테이블 패널 -->
+      <div id="eolPanel" style="display:none; position:absolute; inset:0; background:#f8f9fb; display:none; flex-direction:column; box-sizing:border-box; overflow:hidden;">
+        <!-- 고정 툴바: 검색+버튼+pagination 한 줄 -->
+        <div style="flex-shrink:0; padding:8px 12px; background:#f8f9fb; border-bottom:1px solid #e5e7eb; display:flex; gap:6px; align-items:center; flex-wrap:nowrap; overflow:hidden;">
+          <input id="eolSearch" type="text" placeholder="전체 검색…"
+            style="width:140px; flex-shrink:0; padding:5px 9px; border:1px solid #d1d5db; border-radius:7px; font-size:0.78rem; background:#fff;">
+          <button onclick="eolTable && eolTable.clearFilter(true) & eolTable.clearHeaderFilter() & (document.getElementById('eolSearch').value='')"
+            style="flex-shrink:0; padding:5px 10px; border:1px solid #d1d5db; border-radius:7px; background:#fff; font-size:0.72rem; cursor:pointer; white-space:nowrap;">초기화</button>
+          <button onclick="eolTable && eolTable.download('csv','lifecycle.csv')"
+            style="flex-shrink:0; padding:5px 10px; border:1px solid #d1d5db; border-radius:7px; background:#fff; font-size:0.72rem; cursor:pointer; white-space:nowrap;">CSV ↓</button>
+          <button id="eolUploadBtn" onclick="triggerDbUpload()"
+            style="flex-shrink:0; padding:5px 10px; border:1px solid #2563eb; border-radius:7px; background:#2563eb; color:#fff; font-size:0.72rem; cursor:pointer; white-space:nowrap;">⬆ 최신 DB 업로드</button>
+          <input type="file" id="eolUploadInput" accept=".xlsx" style="display:none;" onchange="handleDbFileSelected(event)">
+          <span id="eolUploadStatus" style="flex-shrink:0; font-size:0.7rem; color:#6b7280; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:170px;"></span>
+          <span id="eolCount" style="flex-shrink:0; font-size:0.72rem; color:#6b7280;"></span>
+          <!-- pagination을 같은 줄 우측에 배치 -->
+          <div id="eolPaginationBar" style="flex:1; display:flex; justify-content:flex-end; align-items:center; min-width:0; overflow:hidden;"></div>
+        </div>
+        <!-- 스크롤 영역: 헤더 필터 + 데이터 행 -->
+        <div style="flex:1; overflow:auto; min-height:0;">
+          <div id="eolTable"></div>
+        </div>
+        <p id="eolError" style="display:none; color:#ef4444; font-size:0.85rem; margin-top:20px; text-align:center; padding:0 14px;"></p>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+</div>
+  
+<div class="proxy-dashboard">
+  <h4>
+    <span>🕹️ 테스트 프록시 사용 현황 <span id="proxyTime" style="font-size:0.8rem; color:#64748b; font-weight:normal; margin-left:10px;"></span></span>
+    <button class="refresh-btn" onclick="fetchProxyLog()">🔄 새로고침</button>
+  </h4>
+  <div id="treeContainer">
+    <span style="font-size:0.85rem; color:#64748b;">데이터를 구성 중입니다...</span>
+  </div>
+</div>
+
+<script>
+/* 장비별 설정 (EoS URL, PDF ID, 링크 등) */
+const deviceConfig = {
+    
+  /* ------------------------------------------------------
+      ISG
+     ------------------------------------------------------ */
+  isg: {
+    color: "#FCC61D",
+    eosUrl:
+      "https://knowledge.broadcom.com/external/article/151102/end-of-life-and-product-lifecycle-for-pr.html",
+    eosFileId: "1984583920084",
+    release:
+      "https://techdocs.broadcom.com/us/en/symantec-security-software/web-and-network-security/integrated-secure-gateway/2-5/25-release-notes.html",
+    features:
+      "https://techdocs.broadcom.com/us/en/symantec-security-software/web-and-network-security/integrated-secure-gateway/2-5/25-release-notes/25-whats-new.html",
+    downloads210: "https://support.broadcom.com/group/ecx/productdownloads?subfamily=SSP-S210%20PLATFORM",
+    downloads410: "https://support.broadcom.com/group/ecx/productdownloads?subfamily=SSP-S410%20PLATFORM"
+
+  },
+    
+  /* ------------------------------------------------------
+      ProxySG
+     ------------------------------------------------------ */
+  proxysg: {
+    color: "#2563eb",
+    eosUrl:
+      "https://knowledge.broadcom.com/external/article/151102/end-of-life-and-product-lifecycle-for-pr.html",
+    eosFileId: "1984583920084",
+    release:
+      "https://techdocs.broadcom.com/us/en/symantec-security-software/web-and-network-security/edge-swg/7-3/what-s-new-in-proxysg-7-3/features-listed-by-release.html",
+    features:
+      "https://techdocs.broadcom.com/us/en/symantec-security-software/web-and-network-security/edge-swg/7-3/what-s-new-in-proxysg-7-3/features-summary-table.html",
+    downloads:
+      "https://support.broadcom.com/group/ecx/productdownloads?subfamily=ISG+Proxy&tab=Products"
+  },
+
+  /* ------------------------------------------------------
+      CA / MA
+     ------------------------------------------------------ */
+  casma: {
+    color: "#10b981",
+    eosUrl:
+      "https://knowledge.broadcom.com/external/article/151099/endoflife-information-for-content-analys.html",
+    eosFileId: "2129443568723",
+    release:
+      "https://techdocs.broadcom.com/us/en/symantec-security-software/web-and-network-security/content-analysis/3-2/rn-cas-3-2-x-intro1.html",
+    features:
+      "https://techdocs.broadcom.com/us/en/symantec-security-software/web-and-network-security/content-analysis/3-2/new_features/rn-cas-new-features-3-2-1-1.html",
+    downloads:
+      "https://support.broadcom.com/group/ecx/productdownloads?subfamily=ISG%20Content%20Analysis"
+  },
+
+  /* ------------------------------------------------------
+      Management Center
+     ------------------------------------------------------ */
+  mc: {
+    color: "#8b5cf6",
+    eosUrl:
+      "https://knowledge.broadcom.com/external/article/151106/end-of-life-for-management-center-and-re.html",
+    eosFileId: "2053418003639",
+    release:
+      "https://techdocs.broadcom.com/us/en/symantec-security-software/web-and-network-security/management-center/4-1/pdf_first.html",
+    features:
+      "https://techdocs.broadcom.com/us/en/symantec-security-software/web-and-network-security/management-center/4-1/4x-release-notes/4x-whats-new.html",
+    downloads:
+      "https://support.broadcom.com/group/ecx/productdownloads?subfamily=Management%20Center"
+  },
+
+  /* ------------------------------------------------------
+      Reporter
+     ------------------------------------------------------ */
+  reporter: {
+    color: "#BF124D",
+    eosUrl:
+      "https://knowledge.broadcom.com/external/article/386552/end-of-life-for-reporter.html",
+    eosFileId: "1762093086557",
+    release:
+      "https://techdocs.broadcom.com/us/en/symantec-security-software/web-and-network-security/reporter/11-0/RNFirstPage.html",
+    features:
+      "https://techdocs.broadcom.com/us/en/symantec-security-software/web-and-network-security/reporter/11-0/about-reporter-11.html",
+    downloads:
+      "https://support.broadcom.com/group/ecx/productdownloads?subfamily=Reporter-S500"
+  },
+
+  /* ------------------------------------------------------
+      SSLV (통합)  – EoS iframe + PDF H/W / S/W 나눔
+     ------------------------------------------------------ */
+  sslv: {
+    color: "#016B61",
+    eosUrl:
+      "https://knowledge.broadcom.com/external/article/233783/end-of-life-and-product-lifecycle-for-ss.html",
+    pdfHw: "2125613821255",   // H/W EoL PDF
+    pdfSw: "1532624862427",   // S/W EoL PDF
+    release:
+      "https://techdocs.broadcom.com/us/en/symantec-security-software/web-and-network-security/ssl-visibility/6-1/6x-release-notes.html",
+    features:
+      "https://techdocs.broadcom.com/us/en/symantec-security-software/web-and-network-security/ssl-visibility/6-1/6x-release-notes/6x-whats-new.html",
+    downloads: ""  // 아직 별도 다운로드 링크 없음 → 버튼 클릭 시 안내
+  },
+
+  /* ------------------------------------------------------
+      PacketShaper (통합) – EoS iframe + PDF H/W / S/W 나눔
+     ------------------------------------------------------ */
+  packetshaper: {
+    color: "#F875AA",
+    eosUrl:
+      "https://knowledge.broadcom.com/external/article/151110/packetshaper-endoflife-documents.html",
+    pdfHw: "897029641901",   // H/W EoL PDF
+    pdfSw: "874655704489",   // S/W EoL PDF
+    release:
+      "",
+    features:
+      "",
+    downloads:
+      "https://support.broadcom.com/group/ecx/productdownloads?subfamily=PacketShaper%20S-Series"
+  }
+};
+
+let currentDeviceId = null;
+
+/* 장비 버튼 클릭 */
+function selectDoc(deviceId, btnElem) {
+  // 기존 active 제거
+  document.querySelectorAll(".doc-btn").forEach(b => {
+    b.classList.remove("active");
+  });
+
+  const cfg = deviceConfig[deviceId] || {};
+  const color = cfg.color || btnElem.getAttribute("data-color") || "#2563eb";
+
+  // 선택 버튼 active + 색상 반영
+  btnElem.classList.add("active");
+  btnElem.style.setProperty("--btn-color", color);
+
+  // 기존 서브메뉴 제거
+  document.querySelectorAll(".submenu-container").forEach(el => el.remove());
+
+  // 서브메뉴 생성
+  const submenu = document.createElement("div");
+  submenu.className = "submenu-container";
+
+  submenu.innerHTML = `
+    <div class="submenu-row">
+      <button class="submenu-btn submenu-btn-main submenu-eos">
+        <span>⭐ EoL</span>
+      </button>
+    </div>
+    <div class="submenu-link-row">
+      <button class="submenu-btn submenu-link submenu-release">
+        <span class="submenu-link-label">
+          <span class="submenu-link-text">Release Notes</span>
+          <span class="submenu-link-icon-wrap">
+            <svg class="submenu-link-icon" viewBox="0 0 16 16">
+              <path d="M5 11L11 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+              <path d="M7 5H11V9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </span>
+        </span>
+      </button>
+      <button class="submenu-btn submenu-link submenu-features">
+        <span class="submenu-link-label">
+          <span class="submenu-link-text">Features Summary</span>
+          <span class="submenu-link-icon-wrap">
+            <svg class="submenu-link-icon" viewBox="0 0 16 16">
+              <path d="M5 11L11 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+              <path d="M7 5H11V9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </span>
+        </span>
+      </button>
+      <button class="submenu-btn submenu-link submenu-downloads">
+        <span class="submenu-link-label">
+          <span class="submenu-link-text">Downloads</span>
+          <span class="submenu-link-icon-wrap">
+            <svg class="submenu-link-icon" viewBox="0 0 16 16">
+              <path d="M5 11L11 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+              <path d="M7 5H11V9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </span>
+        </span>
+      </button>
+    </div>
+  `;
+
+  // 스타일 보정
+  submenu.style.borderColor = color;
+  submenu.style.boxShadow = `0 0 0 1px ${hexWithAlpha(color, 0.20)}`;
+
+  const eosBtn = submenu.querySelector(".submenu-eos");
+  eosBtn.style.backgroundColor = color;
+  eosBtn.style.color = "#fff";
+
+  const releaseBtn   = submenu.querySelector(".submenu-release");
+  const featuresBtn  = submenu.querySelector(".submenu-features");
+  const downloadsBtn = submenu.querySelector(".submenu-downloads");
+  const row          = submenu.querySelector(".submenu-row");
+
+  // 장비 버튼 바로 아래에 삽입
+  btnElem.insertAdjacentElement("afterend", submenu);
+
+  // 슬라이드 애니메이션
+  requestAnimationFrame(() => submenu.classList.add("open"));
+
+  // EoL 버튼 → 우측 패널에 테이블 표시
+  eosBtn.addEventListener("click", () => {
+    showEolTable(deviceId, color);
+  });
+
+  // 링크 버튼 처리
+  releaseBtn.addEventListener("click", ()   => openDocLink(deviceId, "release"));
+  featuresBtn.addEventListener("click", ()  => openDocLink(deviceId, "features"));
+  // ISG의 Downloads 분기 처리
+    if (deviceId === "isg") {
+    
+        const linkRow = submenu.querySelector(".submenu-link-row");
+    
+        // 기존 downloadsBtn을 submenu-link 스타일로 변환
+        downloadsBtn.className = "submenu-btn submenu-link submenu-downloads210";
+        downloadsBtn.innerHTML = `
+            <span class="submenu-link-label">
+              <span class="submenu-link-text">Downloads (S210)</span>
+              <span class="submenu-link-icon-wrap">
+                <svg class="submenu-link-icon" viewBox="0 0 16 16">
+                  <path d="M5 11L11 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                  <path d="M7 5H11V9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </span>
+            </span>
+        `;
+    
+        const btn410 = downloadsBtn.cloneNode(true);
+        btn410.className = "submenu-btn submenu-link submenu-downloads410";
+        btn410.innerHTML = `
+            <span class="submenu-link-label">
+              <span class="submenu-link-text">Downloads (S410)</span>
+              <span class="submenu-link-icon-wrap">
+                <svg class="submenu-link-icon" viewBox="0 0 16 16">
+                  <path d="M5 11L11 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                  <path d="M7 5H11V9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </span>
+            </span>
+        `;
+    
+        // 아래 줄로 이동
+        linkRow.appendChild(downloadsBtn);
+        linkRow.appendChild(btn410);
+    
+        // 링크 연결
+        downloadsBtn.addEventListener("click", () =>
+            openDocLink(deviceId, "downloads210")
+        );
+        btn410.addEventListener("click", () =>
+            openDocLink(deviceId, "downloads410")
+        );
+    
+
+
+    } else {
+        // 기존 로직
+        downloadsBtn.addEventListener("click", () =>
+            openDocLink(deviceId, "downloads"));
+    }
+}
+
+/* HEX + alpha 헬퍼 */
+function hexWithAlpha(hex, alpha) {
+  const _hex = hex.replace("#", "");
+  if (_hex.length !== 6) return hex;
+  const r = parseInt(_hex.slice(0,2),16);
+  const g = parseInt(_hex.slice(2,4),16);
+  const b = parseInt(_hex.slice(4,6),16);
+  return `rgba(${r},${g},${b},${alpha})`;
+}
+
+/* iframe 로딩 */
+function loadDoc(deviceId) {
+  const iframe = document.getElementById("kbFrame");
+  const loader = document.getElementById("loader");
+  const placeholder = document.getElementById("placeholder");
+  const linkBtn = document.getElementById("kbLinkBtn");
+  
+  // ★ 다른 장비를 선택하거나 EoL 웹문서를 열 때 제목 초기화
+  document.getElementById("iframeTitle").textContent = "📄 Broadcom KB Preview";
+
+  const cfg = deviceConfig[deviceId] || {};
+  currentDeviceId = deviceId;
+
+  if (!cfg.eosUrl) {
+    iframe.style.display = "none";
+    loader.style.display = "none";
+    placeholder.style.display = "block";
+    linkBtn.disabled = true;
+    return;
+  }
+
+  placeholder.style.display = "none";
+  loader.style.display = "block";
+  iframe.style.display = "none";
+  linkBtn.disabled = false;
+
+  iframe.src = cfg.eosUrl;
+}
+
+/* iframe 로드 완료 */
+document.getElementById("kbFrame").addEventListener("load", () => {
+  document.getElementById("loader").style.display = "none";
+  document.getElementById("kbFrame").style.display = "block";
+});
+
+/* 원본 KB 페이지 새창 */
+function openKB() {
+  if (!currentDeviceId) return;
+  const cfg = deviceConfig[currentDeviceId] || {};
+  if (!cfg.eosUrl) return;
+  window.open(cfg.eosUrl, "_blank");
+}
+
+/* Release / Features / Downloads 새창 */
+function openDocLink(deviceId, type) {
+  hideEolPanel();
+  const cfg = deviceConfig[deviceId] || {};
+  const url = cfg[type];
+
+  if (!url) {
+    alert("해당 장비의 " + type + " 링크를 확인할 수 없습니다.");
+    return;
+  }
+  window.open(url, "_blank");
+}
+
+/* GitHub 내부의 PDF를 가져와서 iframe에 띄우기 */
+function viewPDF(uniqueId) {
+  hideEolPanel();
+  if (!uniqueId) return;
+
+  const iframe = document.getElementById("kbFrame");
+  const loader = document.getElementById("loader");
+  const placeholder = document.getElementById("placeholder");
+  const linkBtn = document.getElementById("kbLinkBtn");
+  const iframeTitle = document.getElementById("iframeTitle");
+
+  placeholder.style.display = "none";
+  iframe.style.display = "none";
+  loader.style.display = "block";
+  linkBtn.disabled = true;
+  // 로딩 중 텍스트 표시
+  iframeTitle.textContent = "📄 PDF 불러오는 중...";
+
+  const pdfUrl = `https://raw.githubusercontent.com/etech-symantec/broadcom/main/pdfs/${uniqueId}.pdf`;
+  // ★ GitHub Commits API: 이 파일의 마지막 커밋(업데이트) 기록 1개를 가져오는 주소
+  const commitApiUrl = `https://api.github.com/repos/etech-symantec/broadcom/commits?path=pdfs/${uniqueId}.pdf&page=1&per_page=1`;
+
+  // 1. PDF 파일 가져오기
+  fetch(pdfUrl)
+    .then(response => {
+      if (!response.ok) throw new Error("PDF 문서를 찾을 수 없습니다.");
+      return response.blob();
+    })
+    .then(blob => {
+      const fileURL = URL.createObjectURL(new Blob([blob], { type: 'application/pdf' }));
+      iframe.src = fileURL;
+
+      // 2. PDF 로드 성공 후, GitHub API를 호출해 날짜 가져오기
+      fetch(commitApiUrl)
+        .then(res => res.json())
+        .then(data => {
+          if (data && data.length > 0) {
+            // 커밋된 날짜 추출 및 한국 시간 기준 포맷팅 (YYYY-MM-DD)
+            const dateObj = new Date(data[0].commit.committer.date);
+            const yyyy = dateObj.getFullYear();
+            const mm = String(dateObj.getMonth() + 1).padStart(2, '0');
+            const dd = String(dateObj.getDate()).padStart(2, '0');
+            
+            // 제목 업데이트
+            iframeTitle.textContent = `📄 PDF 문서 (최근 업데이트: ${yyyy}-${mm}-${dd})`;
+          } else {
+            iframeTitle.textContent = "📄 PDF 문서";
+          }
+        })
+        .catch(() => {
+          // API 호출 실패 시 (GitHub API 제한 등) 기본 텍스트 표시
+          iframeTitle.textContent = "📄 PDF 문서";
+        });
+    })
+    .catch(error => {
+      console.error("PDF 로드 에러:", error);
+      alert("PDF를 불러오는 중 오류가 발생했습니다.");
+      loader.style.display = "none";
+      placeholder.style.display = "block";
+      iframeTitle.textContent = "📄 Broadcom KB Preview"; // 에러 시 복구
+    });
+}
+
+// 💡 사용자 IP - 이름 매핑 (여기에 IP와 사용자명을 계속 추가하시면 됩니다!)
+const userMapping = {
+  "172.16.70.220": "테스트 VM PC",
+  "10.82.160.113": "박동석",
+  "10.82.64.151": "윤태리",
+  "10.82.64.34": "신호근",
+  "10.82.64.147": "김상문",
+  "10.82.160.92": "홍진영"
+};
+  
+// ★ 프록시 로그 파싱 및 버튼 렌더링 스크립트 ★
+function fetchProxyLog() {
+  const container = document.getElementById("treeContainer") || document.getElementById("proxyContainer");
+  const timeSpan = document.getElementById("proxyTime");
+  const refreshBtn = document.querySelector(".refresh-btn");
+  
+  if (refreshBtn) {
+    refreshBtn.innerHTML = "⏳ Loading...";
+    refreshBtn.disabled = true;
+  }
+
+  const apiLogUrl = `https://api.github.com/repos/etech-symantec/broadcom/contents/logs/proxy_8082_check.log?t=${Date.now()}`;
+
+  fetch(apiLogUrl, { 
+    headers: { 'Accept': 'application/vnd.github.v3.raw' },
+    cache: "no-store" 
+  })
+  .then(r => r.text())
+  .then(text => {
+    const lines = text.trim().split('\n').filter(l => l.trim().length > 0);
+    if (lines.length === 0) {
+      container.innerHTML = '<span style="color:#10b981; font-weight:600;">✅ 접속 중인 클라이언트가 없습니다.</span>';
+      return;
+    }
+    
+    const mapping = {};
+    let lastTime = "";
+
+    // 💡 데이터 추출 헬퍼 함수 (정규식 매칭 실패 시 빈 값 반환)
+    const extract = (regex, str) => {
+      const match = str.match(regex);
+      return (match && match[1]) ? match[1].trim() : "";
+    };
+
+    lines.forEach(line => {
+      const tMatch = line.match(/^(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})/);
+      if (tMatch) lastTime = tMatch[1];
+
+      const sMatch = line.match(/SERVER:(.*?) \[(UP|DOWN)\]/);
+      if (sMatch) {
+        const sIp = sMatch[1].trim();
+        const sStatus = sMatch[2];
+        if (!mapping[sIp]) mapping[sIp] = { status: sStatus, name: "", ver: "", ram: "", core: "", pol: "", clients: [] };
+
+        // 💡 개별 매칭 방식으로 변경하여 안정성 강화
+        const n = extract(/\[NAME:(.*?)\]/, line);
+        const v = extract(/\[VER:(.*?)\]/, line);
+        const r = extract(/\[RAM:(.*?)\]/, line);
+        const c = extract(/\[CORE:(.*?)\]/, line);
+        const p = extract(/\[POL:(.*?)\]/, line);
+
+        if (n) mapping[sIp].name = n;
+        if (v) mapping[sIp].ver = v;
+        if (r) mapping[sIp].ram = r;
+        if (c) mapping[sIp].core = c;
+        if (p) mapping[sIp].pol = p;
+
+        const cMatch = line.match(/CLIENT:(.*?)$/);
+        if (cMatch) mapping[sIp].clients.push(cMatch[1].trim());
+      }
+    });
+
+    if (timeSpan) timeSpan.textContent = `(Last Check: ${lastTime})`;
+    
+    if (Object.keys(mapping).length === 0) {
+      container.innerHTML = '<span style="color:#64748b; font-weight:600;">⚠️ 접속된 클라이언트가 없습니다.</span>';
+      return;
+    }
+
+    let html = '<ul class="tree-root">';
+    
+    const sortedServers = Object.keys(mapping).sort((a, b) => {
+      const ipA = parseInt(a.split('.').pop(), 10) || 0;
+      const ipB = parseInt(b.split('.').pop(), 10) || 0;
+      return ipA - ipB;
+    });
+
+    sortedServers.forEach(server => {
+      const data = mapping[server];
+      const isUp = data.status === "UP";
+      const statusClass = isUp ? "status-up" : "status-down";
+      // 💡 오프라인일 경우 축소 클래스 추가
+      const nodeClass = isUp ? "" : " offline-node";
+      
+      // 1. 첫 번째 줄: 내부/외부 번호
+      const lastOctet = server.split('.').pop();
+      const baseName = server.startsWith("172.16.70.") ? `내부 ${lastOctet}번` : `외부 ${lastOctet}번`;
+      
+      // 2. 두 번째 줄: 장비 이름
+      const aliasHtml = (data.name && data.name !== "Unknown") 
+                        ? `<div class="proxy-alias">${data.name}</div>` 
+                        : "";
+      
+      // 💡 하단 스펙 - 요청하신 태그 형식 적용
+      let specHtml = "";
+      if (isUp) {
+        const v = (data.ver && data.ver !== "Unknown") ? data.ver : "?";
+        let r = "?";
+        if (data.ram && data.ram !== "Unknown" && !isNaN(data.ram)) {
+          r = Math.round(parseInt(data.ram) / 1024) + "GB";
+        }
+        const c = (data.core && data.core !== "Unknown") ? data.core : "?";
+        const p = (data.pol && data.pol !== "Unknown") ? data.pol : "?";
+
+        specHtml = `
+            <div class="proxy-specs-grid">
+            <span class="spec-tag">Core: ${c}</span>
+            <span class="spec-tag">Mem: ${r}</span>
+            <span class="spec-tag">v.${v}</span>
+            <span class="spec-tag">정책#: ${p}개</span>
+          </div>`;
+      } else {
+                specHtml = `<div class="proxy-specs-grid" style="display:flex; align-items:center;"><span class="spec-tag" style="color:#ef4444; border-color:#fca5a5; padding:2px 6px;">OFFLINE</span></div>`;
+
+      }
+
+      // 접속자 수 배지
+      const badge = (isUp && data.clients.length > 0) 
+                    ? `<span class="count" style="background:#2563eb; color:#fff; padding:1px 5px; border-radius:6px; font-size:0.6rem; margin-left:2px;">${data.clients.length}</span>` 
+                    : "";
+      
+      const clickEvent = isUp ? `onclick="window.open('https://${server}:8082', '_blank')"` : "";
+      const upClass = isUp ? " up-state" : "";
+      const tooltip = isUp ? `${server} 관리자 페이지 열기` : `${server} (오프라인)`;
+      
+      // 💡 3줄 UI 렌더링
+      html += `
+        <li class="tree-node${nodeClass}">
+          <div class="proxy-item${upClass}" title="${server}" ${clickEvent}>
+            <div style="display:flex; align-items:flex-start; gap:8px;">
+              <span class="status-dot ${statusClass}"></span>
+              <div class="proxy-info">
+                <div class="proxy-title">${baseName}${badge}</div>
+                ${aliasHtml}
+              </div>
+            </div>
+            ${specHtml}
+          </div>
+          <ul class="client-list">`;
+          
+          // 💡 사용자 목록 출력 (IP 맵핑 로직 적용)
+          data.clients.forEach(clientIp => {
+            const userName = userMapping[clientIp];
+            
+            // 매핑된 이름이 있으면 진하게 표시하고, 뒤에 연한 회색으로 IP를 덧붙임
+            const displayClient = userName 
+                                  ? `<span style="font-weight:800; color:#15803d;">${userName}</span> <span style="font-size:0.65rem; color:#94a3b8;">(${clientIp})</span>` 
+                                  : clientIp;
+            
+            html += `<li class="client-item">👤 ${displayClient}</li>`;
+          });
+          html += `</ul></li>`;
+        });
+        html += '</ul>';
+        container.innerHTML = html;
+      })
+  .finally(() => {
+    if (refreshBtn) {
+      refreshBtn.innerHTML = "🔄 새로고침 (3분 간격)";
+      refreshBtn.disabled = false;
+    }
+  });
+}
+
+function formatDate(date) {
+  const pad = (n) => String(n).padStart(2, '0');
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
+}
+
+document.addEventListener("DOMContentLoaded", fetchProxyLog);
+
+/* =========================================================
+   EOL 테이블 - showEolTable(deviceId, accentColor)
+   data.json을 fetch해서 우측 패널에 Tabulator 테이블로 표시
+   ========================================================= */
+let eolTable = null;
+let eolDataCache = null;   // 한 번 받은 JSON을 재사용
+
+const DATE_COLS = ["General Availability", "End of Service", "End of Life", "Stabilization Date"];
+
+function lifecycleStatus(eolStr) {
+  if (!eolStr) return { key: "unknown", label: "N/A" };
+  const eol = new Date(eolStr);
+  if (isNaN(eol)) return { key: "unknown", label: "N/A" };
+  const now = new Date();
+  const soon = new Date(); soon.setMonth(now.getMonth() + 6);
+  if (eol < now)  return { key: "eol",  label: "EOL" };
+  if (eol < soon) return { key: "soon", label: "EOL Soon" };
+  return { key: "ok", label: "Active" };
+}
+
+function showEolTable(deviceId, accentColor) {
+  const panel      = document.getElementById("eolPanel");
+  const iframe     = document.getElementById("kbFrame");
+  const loader     = document.getElementById("loader");
+  const placeholder= document.getElementById("placeholder");
+  const titleEl    = document.getElementById("iframeTitle");
+  const linkBtn    = document.getElementById("kbLinkBtn");
+  const errEl      = document.getElementById("eolError");
+
+  // 헤더 상태 업데이트
+  titleEl.innerHTML = "📋 Product Lifecycle 테이블";
+  // 날짜는 데이터 로드 후 업데이트 (캐시 있으면 즉시)
+  if (eolDataCache && eolDataCache.generated_at) {
+    titleEl.innerHTML = '📋 Product Lifecycle 테이블 <span style="font-size:0.7rem;font-weight:400;color:#94c4e8;margin-left:6px;">업데이트: ' + eolDataCache.generated_at.slice(0,10) + '</span>';
+  }
+  linkBtn.disabled = false;
+  linkBtn.onclick = () =>
+    window.open("https://support.broadcom.com/group/ecx/productlifecycle", "_blank");
+
+  // 패널 전환
+  placeholder.style.display = "none";
+  loader.style.display      = "none";
+  iframe.style.display      = "none";
+  errEl.style.display       = "none";
+  panel.style.display       = "flex";
+
+  // 이미 캐시된 데이터가 있으면 바로 필터만 적용
+  if (eolDataCache) {
+    applyDeviceFilter(deviceId, accentColor);
+    return;
+  }
+
+  // data.json 로드
+  fetch("data.json")
+    .then(r => { if (!r.ok) throw new Error("data.json 로드 실패 (" + r.status + ")"); return r.json(); })
+    .then(payload => {
+      eolDataCache = payload;
+      buildEolTable(payload, deviceId, accentColor);
+    })
+    .catch(err => {
+      errEl.textContent = "⚠️ " + err.message;
+      errEl.style.display = "block";
+    });
+}
+
+function buildEolTable(payload, deviceId, accentColor) {
+  const columns = payload.columns || [];
+  const records = payload.records || [];
+
+  // 헤더 타이틀에 날짜 반영
+  const titleEl = document.getElementById("iframeTitle");
+  if (titleEl && payload.generated_at) {
+    titleEl.innerHTML = '📋 Product Lifecycle 테이블 <span style="font-size:0.7rem;font-weight:400;color:#94c4e8;margin-left:6px;">업데이트: ' + payload.generated_at.slice(0,10) + '</span>';
+  }
+
+  // 상태 컬럼 + 데이터 컬럼 정의
+  const colDefs = [
+    {
+      title: "Status", field: "_status", width: 100,
+      headerFilter: "select",
+      headerFilterParams: { values: { "": "전체", "eol": "EOL", "soon": "EOL Soon", "ok": "Active", "unknown": "N/A" } },
+      headerFilterFunc: (v, _, rowData) => !v || lifecycleStatus(rowData["End of Life"]).key === v,
+      formatter: cell => {
+        const s = lifecycleStatus(cell.getData()["End of Life"]);
+        const colors = { eol: ["#fde8e8","#b91c1c"], soon: ["#fef3c7","#92400e"], ok: ["#d1fae5","#065f46"], unknown: ["#f3f4f6","#6b7280"] };
+        const [bg, fg] = colors[s.key] || colors.unknown;
+        return `<span style="background:${bg};color:${fg};padding:2px 8px;border-radius:4px;font-size:0.7rem;font-weight:700;">${s.label}</span>`;
+      },
+      sorter: (a, b, aRow, bRow) => {
+        const o = {eol:0, soon:1, ok:2, unknown:3};
+        return o[lifecycleStatus(aRow.getData()["End of Life"]).key] - o[lifecycleStatus(bRow.getData()["End of Life"]).key];
+      }
+    },
+    ...columns.map(col => {
+      // 고유값 목록 수집 → datalist 자동완성 ID
+      const listId = "dl-" + col.replace(/[^a-zA-Z0-9]/g, "_");
+      const uniqueVals = [...new Set(records.map(r => String(r[col] ?? "")).filter(v => v !== ""))].sort();
+
+      // datalist 생성 (없으면 새로 만들어 body에 추가)
+      if (!document.getElementById(listId)) {
+        const dl = document.createElement("datalist");
+        dl.id = listId;
+        uniqueVals.forEach(v => {
+          const opt = document.createElement("option");
+          opt.value = v;
+          dl.appendChild(opt);
+        });
+        document.body.appendChild(dl);
+      }
+
+      return {
+        title: col, field: col,
+        headerFilter: "input",
+        headerFilterPlaceholder: "검색/선택…",
+        headerFilterParams: { list: listId },
+        headerFilterFunc: "like",
+        sorter: DATE_COLS.includes(col) ? "date" : "string",
+        sorterParams: DATE_COLS.includes(col) ? { format: "yyyy-MM-dd" } : undefined,
+        formatter: DATE_COLS.includes(col) ? cell => cell.getValue() || "—" : undefined,
+        minWidth: DATE_COLS.includes(col) ? 120 : 130,
+      };
+    })
+  ];
+
+  if (eolTable) { eolTable.destroy(); eolTable = null; }
+
+  eolTable = new Tabulator("#eolTable", {
+    data: records,
+    columns: colDefs,
+    layout: "fitDataStretch",
+    height: "100%",
+    pagination: true,
+    paginationSize: 20,
+    paginationSizeSelector: [10, 20, 50, true],
+    paginationElement: document.getElementById("eolPaginationBar"),
+    initialSort: [{ column: "_status", dir: "asc" }],
+    placeholder: "데이터가 없습니다",
+    rowFormatter: row => {
+      const s = lifecycleStatus(row.getData()["End of Life"]);
+      if (s.key === "eol")  row.getElement().style.background = "#fff8f8";
+      if (s.key === "soon") row.getElement().style.background = "#fffef0";
+    },
+  });
+
+  // 행 수 업데이트
+  // 테이블 렌더 완료 후 각 헤더 필터 input에 datalist 연결
+  eolTable.on("tableBuilt", () => {
+    columns.forEach(col => {
+      const listId = "dl-" + col.replace(/[^a-zA-Z0-9]/g, "_");
+      const headerCells = document.querySelectorAll("#eolTable .tabulator-header .tabulator-col");
+      headerCells.forEach(cell => {
+        if (cell.getAttribute("tabulator-field") === col) {
+          const input = cell.querySelector("input");
+          if (input && document.getElementById(listId)) {
+            input.setAttribute("list", listId);
+          }
+        }
+      });
+    });
+  });
+
+  eolTable.on("dataFiltered", data => {
+    document.getElementById("eolCount").textContent = data.length + "건";
+  });
+  document.getElementById("eolCount").textContent = records.length + "건";
+
+  // 전체 검색창 연결
+  const searchInput = document.getElementById("eolSearch");
+  searchInput.oninput = e => {
+    const term = e.target.value.trim();
+    eolTable.clearFilter();
+    if (term) eolTable.setFilter(data =>
+      Object.values(data).some(v => String(v ?? "").toLowerCase().includes(term.toLowerCase()))
+    );
+  };
+
+  applyDeviceFilter(deviceId, accentColor);
+}
+
+// deviceId에 맞게 Product 컬럼을 자동 필터링
+const DEVICE_KEYWORDS = {
+  isg:          "SSP",
+  proxysg:      "ISG Proxy",
+  casma:        "Content Analysis",
+  mc:           "Management Center",
+  reporter:     "Reporter",
+  sslv:         "SSL Visibility",
+  packetshaper: "PacketShaper",
+};
+
+function applyDeviceFilter(deviceId, accentColor) {
+  if (!eolTable) return;
+  const kw = DEVICE_KEYWORDS[deviceId];
+  eolTable.clearFilter(true);
+  document.getElementById("eolSearch").value = "";
+  if (kw) {
+    eolTable.setFilter(data =>
+      Object.values(data).some(v => String(v ?? "").toLowerCase().includes(kw.toLowerCase()))
+    );
+    document.getElementById("eolSearch").value = kw;
+  }
+  // 헤더 강조색 반영
+  document.documentElement.style.setProperty("--eol-accent", accentColor || "#1e3a5f");
+}
+
+// 다른 버튼 클릭 시 테이블 패널 숨기고 iframe 복원
+function hideEolPanel() {
+  const panel = document.getElementById("eolPanel");
+  if (panel) panel.style.display = "none";
+}
+
+/* =========================================================
+   최신 DB 업로드 - GitHub Contents API로 data/*.xlsx 커밋
+   ⚠️ PAT는 절대 이 파일(공개 페이지)에 하드코딩하지 않습니다.
+      버튼을 누를 때마다 세션 메모리에만 보관되고,
+      탭을 새로고침하면 사라집니다. 저장소/브랜치는 아래에서 수정하세요.
+   ========================================================= */
+const GH_REPO_OWNER  = "etech-symantec";
+const GH_REPO_NAME    = "broadcom";
+const GH_REPO_BRANCH  = "main";       // 실제 기본 브랜치와 다르면 수정
+const GH_UPLOAD_DIR   = "data";       // xlsx를 올릴 폴더 (convert.py의 DATA_DIR과 일치해야 함)
+
+let _ghToken = null; // 세션 동안만 메모리에 보관, 새로고침하면 초기화됨
+
+function triggerDbUpload() {
+  document.getElementById("eolUploadInput").click();
+}
+
+function setUploadStatus(msg, isError) {
+  const el = document.getElementById("eolUploadStatus");
+  el.textContent = msg;
+  el.style.color = isError ? "#ef4444" : "#6b7280";
+}
+
+async function handleDbFileSelected(event) {
+  const file = event.target.files[0];
+  event.target.value = ""; // 같은 파일 재선택 가능하도록 초기화
+  if (!file) return;
+
+  if (!file.name.toLowerCase().endsWith(".xlsx")) {
+    setUploadStatus("⚠️ .xlsx 파일만 업로드 가능합니다", true);
+    return;
+  }
+
+  if (!_ghToken) {
+    _ghToken = window.prompt(
+      "GitHub Personal Access Token을 입력하세요.\n" +
+      "(repo 쓰기 권한 필요 · 이 탭을 새로고침할 때까지만 메모리에 보관되며 저장되지 않습니다)"
+    );
+    if (!_ghToken) {
+      setUploadStatus("업로드 취소됨 (토큰 미입력)", true);
+      return;
+    }
+  }
+
+  const uploadBtn = document.getElementById("eolUploadBtn");
+  uploadBtn.disabled = true;
+  setUploadStatus("업로드 중…", false);
+
+  try {
+    const base64Content = await fileToBase64(file);
+    const path = `${GH_UPLOAD_DIR}/${file.name}`;
+    const apiUrl = `https://api.github.com/repos/${GH_REPO_OWNER}/${GH_REPO_NAME}/contents/${encodeURIComponent(path)}`;
+    const headers = {
+      "Authorization": `Bearer ${_ghToken}`,
+      "Accept": "application/vnd.github+json",
+      "X-GitHub-Api-Version": "2022-11-28",
+      "Content-Type": "application/json",
+    };
+
+    // 동일 경로에 파일이 이미 있으면 sha가 필요 (덮어쓰기용)
+    let sha;
+    const existing = await fetch(`${apiUrl}?ref=${GH_REPO_BRANCH}`, { headers });
+    if (existing.ok) {
+      const existingJson = await existing.json();
+      sha = existingJson.sha;
+    } else if (existing.status !== 404) {
+      throw new Error(`기존 파일 조회 실패 (${existing.status})`);
+    }
+
+    const body = {
+      message: `chore: update lifecycle DB (${file.name})`,
+      content: base64Content,
+      branch: GH_REPO_BRANCH,
+    };
+    if (sha) body.sha = sha;
+
+    const putRes = await fetch(apiUrl, {
+      method: "PUT",
+      headers,
+      body: JSON.stringify(body),
+    });
+
+    if (!putRes.ok) {
+      const errJson = await putRes.json().catch(() => ({}));
+      throw new Error(errJson.message || `업로드 실패 (${putRes.status})`);
+    }
+
+    setUploadStatus(`✅ ${file.name} 업로드 완료 (data.json 갱신은 워크플로 확인 필요)`, false);
+  } catch (err) {
+    console.error(err);
+    setUploadStatus("⚠️ " + err.message, true);
+    // 인증 실패 시 잘못된 토큰을 재사용하지 않도록 초기화
+    if (String(err.message).toLowerCase().includes("bad credentials")) {
+      _ghToken = null;
+    }
+  } finally {
+    uploadBtn.disabled = false;
+  }
+}
+
+function fileToBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      // data:...;base64,XXXX 에서 base64 부분만 추출
+      const result = reader.result;
+      const base64 = result.substring(result.indexOf(",") + 1);
+      resolve(base64);
+    };
+    reader.onerror = () => reject(new Error("파일 읽기 실패"));
+    reader.readAsDataURL(file);
+  });
+}
+</script>
+
+</body>
+</html>
