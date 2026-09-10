@@ -78,13 +78,26 @@ def _http_get_json(url, timeout=15):
 
 def _slug_from_service_url(url):
     """component['url'] (예: https://status.broadcom.com/services/dlp-cloud) 에서 slug만 추출.
-    최상위(top-level) 컴포넌트만 url 값을 가지므로, 이 값이 있으면 그 자체로 매칭 키가 된다."""
+    최상위(top-level) 컴포넌트만 url 값을 가지므로, 이 값이 있으면 그 자체로 매칭 키가 된다.
+
+    일부 컴포넌트는 /services/<그룹>/<slug> 처럼 경로가 한 단계 더 깊게 내려오는 경우가 있어
+    (예: Symantec ZTNA, Web Isolation), 두 번째 조각(parts[1])만 보면 놓칠 수 있다.
+    그래서 "services" 다음에 오는 마지막 경로 조각을 slug로 사용한다."""
     if not url:
         return None
     parts = [p for p in urlparse(url).path.split("/") if p]
-    if len(parts) >= 2 and parts[0] == "services":
-        return parts[1]
+    if "services" in parts:
+        idx = parts.index("services")
+        if idx + 1 < len(parts):
+            return parts[-1]
     return None
+
+
+def _name_matches(comp_name, target_name):
+    """url 기반 매칭이 실패했을 때를 위한 이름 기반 폴백 (대소문자/양끝 공백 무시)."""
+    if not comp_name or not target_name:
+        return False
+    return comp_name.strip().lower() == target_name.strip().lower()
 
 
 def fetch_broadcom_status():
@@ -92,15 +105,29 @@ def fetch_broadcom_status():
     현재 상태(state)를 모아서 반환한다. 네트워크 실패 등은 여기서 흡수하고
     실패한 서비스는 state='unknown' 으로 표시한다 (전체 빌드를 막지 않기 위함)."""
     target_slugs = {s["slug"] for s in BROADCOM_STATUS_SERVICES}
+    # 이름 -> slug 매핑 (url 매칭이 실패했을 때 이름으로 폴백하기 위함)
+    target_names = {s["name"]: s["slug"] for s in BROADCOM_STATUS_SERVICES}
     found = {}
+
+    def _match_component(comp):
+        """comp를 target 서비스 중 하나와 매칭시켜 found에 채운다.
+        1) url/slug 매칭을 먼저 시도하고, 실패하면 2) 이름 매칭으로 폴백한다."""
+        slug = _slug_from_service_url(comp.get("url"))
+        if slug in target_slugs and slug not in found:
+            found[slug] = comp
+            return
+
+        comp_name = comp.get("name")
+        for tname, tslug in target_names.items():
+            if tslug not in found and _name_matches(comp_name, tname):
+                found[tslug] = comp
+                return
 
     # 1) 가능하면 top-level 컴포넌트만 필터링해서 빠르게 조회
     try:
         payload = _http_get_json(f"{STATUS_API_BASE}?filter[parent_id_null]=true&per_page=100")
         for comp in payload.get("components", []):
-            slug = _slug_from_service_url(comp.get("url"))
-            if slug in target_slugs and slug not in found:
-                found[slug] = comp
+            _match_component(comp)
     except Exception as e:
         print(f"  -> [경고] status.broadcom.com top-level 컴포넌트 조회 실패: {e}")
 
@@ -111,7 +138,7 @@ def fetch_broadcom_status():
     max_pages = 40  # 안전장치: 전체 컴포넌트 수가 매우 많아도 무한 루프에 빠지지 않도록 제한
     while missing and page <= max_pages:
         try:
-            payload = _http_get_json(f"{STATUS_API_BASE}?page={page}")
+            payload = _http_get_json(f"{STATUS_API_BASE}?per_page=100&page={page}")
         except Exception as e:
             print(f"  -> [경고] status.broadcom.com 컴포넌트 목록(page={page}) 조회 실패: {e}")
             break
@@ -121,14 +148,18 @@ def fetch_broadcom_status():
             break
 
         for comp in comps:
-            slug = _slug_from_service_url(comp.get("url"))
-            if slug in target_slugs and slug not in found:
-                found[slug] = comp
+            _match_component(comp)
 
         missing = target_slugs - found.keys()
         if not missing or not payload.get("meta", {}).get("next_page"):
             break
         page += 1
+
+    # 3) 그래도 못 찾은 게 있으면 디버그 로그를 남긴다 (다음 실패 원인 추적용)
+    still_missing = target_slugs - found.keys()
+    if still_missing:
+        missing_names = [s["name"] for s in BROADCOM_STATUS_SERVICES if s["slug"] in still_missing]
+        print(f"  -> [경고] 다음 서비스는 컴포넌트 목록에서 끝내 찾지 못했습니다: {', '.join(missing_names)}")
 
     checked_at = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
     services = []
