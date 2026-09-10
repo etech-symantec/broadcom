@@ -355,6 +355,52 @@
   .status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; flex-shrink: 0; margin-top: 5px; }
   .status-up { background: #22c55e; box-shadow: 0 0 6px #22c55e; }
   .status-down { background: #ef4444; box-shadow: 0 0 6px #ef4444; }
+  .status-warn { background: #f59e0b; box-shadow: 0 0 6px #f59e0b; }
+  .status-unknown { background: #94a3b8; box-shadow: 0 0 6px #94a3b8; }
+
+  /* ---------- Broadcom Status 모아보기 ---------- */
+  .broadcom-status-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 10px 5px;
+    margin: 0;
+    list-style: none;
+  }
+  .broadcom-status-item {
+    background: #f1f5f9;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    padding: 8px 14px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: #1e293b;
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  }
+  .broadcom-status-item:hover {
+    background: #e2e8f0;
+    border-color: #94a3b8;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 6px rgba(0,0,0,0.08);
+  }
+  .broadcom-status-item .status-dot { margin-top: 0; }
+  .broadcom-status-name { white-space: nowrap; }
+  .broadcom-status-label {
+    font-size: 0.7rem;
+    font-weight: 700;
+    padding: 1px 7px;
+    border-radius: 999px;
+    white-space: nowrap;
+  }
+  .broadcom-status-label.up { background: #d1fae5; color: #065f46; }
+  .broadcom-status-label.down { background: #fde8e8; color: #b91c1c; }
+  .broadcom-status-label.warn { background: #fef3c7; color: #92400e; }
+  .broadcom-status-label.unknown { background: #f3f4f6; color: #6b7280; }
 
   /* 사용자 버튼 및 트리 선 디자인 */
   .client-list { 
@@ -594,6 +640,19 @@
   <div id="treeContainer">
     <span style="font-size:0.85rem; color:#64748b;">데이터를 구성 중입니다...</span>
   </div>
+</div>
+
+<div class="proxy-dashboard">
+  <h4>
+    <span>🌐 Broadcom 서비스 상태 모아보기 <span id="broadcomStatusTime" style="font-size:0.8rem; color:#64748b; font-weight:normal; margin-left:10px;"></span></span>
+    <button class="refresh-btn" onclick="fetchBroadcomStatus()">🔄 새로고침</button>
+  </h4>
+  <div id="broadcomStatusContainer">
+    <span style="font-size:0.85rem; color:#64748b;">상태 정보를 불러오는 중입니다...</span>
+  </div>
+  <p style="margin:10px 2px 0; font-size:0.7rem; color:#94a3b8;">
+    ※ 카드를 클릭하면 status.broadcom.com의 실제 서비스 페이지로 이동합니다. 표시된 상태는 빌드(배포) 시점 기준 스냅샷입니다.
+  </p>
 </div>
 
 <script>
@@ -1171,6 +1230,50 @@ function formatDate(date) {
 }
 
 document.addEventListener("DOMContentLoaded", fetchProxyLog);
+
+/* =========================================================
+   Broadcom 서비스 상태 모아보기 (status.broadcom.com)
+   docs/status.json (convert.py가 빌드 시점에 생성) 을 읽어와 카드로 표시
+   ========================================================= */
+function fetchBroadcomStatus() {
+  const container = document.getElementById("broadcomStatusContainer");
+  const timeEl = document.getElementById("broadcomStatusTime");
+  container.innerHTML = '<span style="font-size:0.85rem; color:#64748b;">상태 정보를 불러오는 중입니다...</span>';
+
+  fetch("status.json", { cache: "no-store" })
+    .then(r => { if (!r.ok) throw new Error("status.json 로드 실패 (" + r.status + ")"); return r.json(); })
+    .then(payload => {
+      const services = payload.services || [];
+      if (timeEl) {
+        timeEl.textContent = payload.checked_at ? "마지막 확인: " + payload.checked_at.replace("T", " ").replace("Z", " UTC") : "";
+      }
+      if (!services.length) {
+        container.innerHTML = '<span style="font-size:0.85rem; color:#64748b;">표시할 서비스가 없습니다.</span>';
+        return;
+      }
+      const cssClass = { up: "status-up", down: "status-down", warn: "status-warn", unknown: "status-unknown" };
+      container.innerHTML = '<ul class="broadcom-status-grid"></ul>';
+      const grid = container.querySelector(".broadcom-status-grid");
+      services.forEach(svc => {
+        const dotClass = cssClass[svc.state_css] || "status-unknown";
+        const li = document.createElement("li");
+        li.className = "broadcom-status-item";
+        li.title = "status.broadcom.com에서 열기";
+        li.onclick = () => window.open(svc.url, "_blank");
+        li.innerHTML = `
+          <span class="status-dot ${dotClass}"></span>
+          <span class="broadcom-status-name">${svc.name}</span>
+          <span class="broadcom-status-label ${svc.state_css}">${svc.state_label}</span>
+        `;
+        grid.appendChild(li);
+      });
+    })
+    .catch(err => {
+      container.innerHTML = '<span style="font-size:0.85rem; color:#ef4444;">⚠️ ' + err.message + '</span>';
+    });
+}
+
+document.addEventListener("DOMContentLoaded", fetchBroadcomStatus);
 
 /* =========================================================
    EOL 테이블 - showEolTable(deviceId, accentColor)
