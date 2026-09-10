@@ -8,6 +8,11 @@ on:
       - "data/*.xlsx"
       - "scripts/convert.py"
       - "docs/index.html"
+  # status.broadcom.com 상태 모아보기를 주기적으로 새로고침 (UTC 기준 3시간 간격 = 매일 8회)
+  # convert.py는 실제 상태(state)가 바뀔 때만 status.json을 다시 쓰므로,
+  # 아무 변화가 없으면 커밋 없이 그냥 조용히 종료된다.
+  schedule:
+    - cron: "0 */3 * * *"
   # 필요할 때 수동으로도 실행 가능
   workflow_dispatch:
 
@@ -41,19 +46,22 @@ jobs:
       - name: Check for changes
         id: diff
         run: |
-          if git diff --quiet -- docs/data.json; then
+          # docs/status.json은 실행마다 새로 생성되지 않을 수도 있으므로(변화 없으면 convert.py가 건너뜀)
+          # 존재하는 파일만 골라서 스테이징한다.
+          git add docs/data.json
+          [ -f docs/status.json ] && git add docs/status.json
+          if git diff --cached --quiet; then
             echo "changed=false" >> "$GITHUB_OUTPUT"
           else
             echo "changed=true" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Commit updated data.json
+      - name: Commit updated data.json / status.json
         if: steps.diff.outputs.changed == 'true'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add docs/data.json
-          git commit -m "chore: update product data.json [skip ci]"
+          git commit -m "chore: update product data.json / broadcom status.json [skip ci]"
           git push
 
       - name: Upload Pages artifact
