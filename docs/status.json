@@ -1,5 +1,5 @@
 {
-  "checked_at": "2026-09-10T01:09:48Z",
+  "checked_at": "2026-09-10T01:19:34Z",
   "services": [
     {
       "name": "Cloud Secure Web Gateway",
@@ -50,19 +50,19 @@
       "name": "Symantec ZTNA",
       "slug": "symantec-ztna",
       "url": "https://status.broadcom.com/services/symantec-ztna",
-      "state": "unknown",
-      "state_label": "확인 필요",
-      "state_css": "unknown",
-      "component_updated_at": null
+      "state": "operational",
+      "state_label": "정상",
+      "state_css": "up",
+      "component_updated_at": "2026-09-01T13:12:08.949Z"
     },
     {
       "name": "Web Isolation",
       "slug": "web-isolation",
       "url": "https://status.broadcom.com/services/web-isolation",
-      "state": "unknown",
-      "state_label": "확인 필요",
-      "state_css": "unknown",
-      "component_updated_at": null
+      "state": "operational",
+      "state_label": "정상",
+      "state_css": "up",
+      "component_updated_at": "2026-08-26T18:48:59.323Z"
     }
   ]
 }
