@@ -42,6 +42,7 @@ STATUS_STATE_LABELS = {
     "operational": {"label": "정상", "css": "up"},
     "degraded": {"label": "장애 발생", "css": "down"},
     "under-maintenance": {"label": "점검 중", "css": "warn"},
+    "under_maintenance": {"label": "점검 중", "css": "warn"},
 }
 
 
@@ -102,14 +103,15 @@ def _name_matches(comp_name, target_name):
 
 def fetch_broadcom_status():
     """status.broadcom.com 에서 BROADCOM_STATUS_SERVICES 에 정의된 서비스들의
-    현재 상태(state)를 모아서 반환한다. 네트워크 실패 등은 여기서 흡수하고
-    실패한 서비스는 state='unknown' 으로 표시한다 (전체 빌드를 막지 않기 위함)."""
+    현재 상태(state)를 모아서 반환한다.
+
+    Broadcom Status API는 컴포넌트 목록을 한 페이지에 최대 25개까지만 반환하므로,
+    per_page=100에 의존하지 않고 페이지를 끝까지 순회한다. 특히 Symantec ZTNA,
+    Web Isolation처럼 뒤쪽에 위치한 top-level 서비스도 정상적으로 찾을 수 있다.
+    """
     target_slugs = {s["slug"] for s in BROADCOM_STATUS_SERVICES}
-    # 이름 -> slug 매핑 (url 매칭이 실패했을 때 이름으로 폴백하기 위함)
-    target_names = {s["name"]: s["slug"] for s in BROADCOM_STATUS_SERVICES}
+    target_names = {s["name"].strip().lower(): s["slug"] for s in BROADCOM_STATUS_SERVICES}
     found = {}
-    # 디버그용: "ztna" 또는 "isolation"이 이름/url에 들어간 컴포넌트는 매칭 여부와 무관하게 전부 기록해둔다.
-    # (다음 빌드 로그에서 Broadcom API가 실제로 이 두 서비스를 뭐라고 부르는지 그대로 확인하기 위함)
     debug_candidates = []
     seen_debug_keys = set()
 
@@ -124,8 +126,7 @@ def fetch_broadcom_status():
                 debug_candidates.append(comp)
 
     def _match_component(comp):
-        """comp를 target 서비스 중 하나와 매칭시켜 found에 채운다.
-        1) url/slug 매칭을 먼저 시도하고, 실패하면 2) 이름 매칭으로 폴백한다."""
+        """1) 서비스 URL slug, 2) 정확한 서비스명 순으로 매칭한다."""
         _record_debug(comp)
 
         slug = _slug_from_service_url(comp.get("url"))
@@ -133,51 +134,58 @@ def fetch_broadcom_status():
             found[slug] = comp
             return
 
-        comp_name = comp.get("name")
-        for tname, tslug in target_names.items():
-            if tslug not in found and _name_matches(comp_name, tname):
-                found[tslug] = comp
-                return
+        comp_name = (comp.get("name") or "").strip().lower()
+        tslug = target_names.get(comp_name)
+        if tslug and tslug not in found:
+            found[tslug] = comp
 
-    # 1) 가능하면 top-level 컴포넌트만 필터링해서 빠르게 조회
-    try:
-        payload = _http_get_json(f"{STATUS_API_BASE}?filter[parent_id_null]=true&per_page=100")
-        comps_phase1 = payload.get("components", [])
-        print(f"  -> [디버그] top-level 조회 결과: {len(comps_phase1)}개 컴포넌트")
-        for comp in comps_phase1:
-            _match_component(comp)
-    except Exception as e:
-        print(f"  -> [경고] status.broadcom.com top-level 컴포넌트 조회 실패: {e}")
+    def _scan_component_pages(top_level_only=False, max_pages=100):
+        """Broadcom API의 25개/page 제한을 고려해 페이지를 끝까지 순회한다."""
+        page = 1
+        scanned = 0
+        while page <= max_pages:
+            if top_level_only:
+                url = f"{STATUS_API_BASE}?filter[parent_id_null]=true&page={page}"
+            else:
+                url = f"{STATUS_API_BASE}?page={page}"
 
-    # 2) 필터가 무시되었거나 일부를 못 찾았으면, 전체 컴포넌트를 페이지네이션하며 보강 탐색
-    #    (컴포넌트 목록은 부모 -> 자식 순서로 나열되므로 최상위 항목은 앞쪽에 몰려있지 않을 수 있다)
+            try:
+                payload = _http_get_json(url)
+            except Exception as e:
+                scope = "top-level" if top_level_only else "전체"
+                print(f"  -> [경고] status.broadcom.com {scope} 컴포넌트 조회 실패(page={page}): {e}")
+                break
+
+            comps = payload.get("components", [])
+            if not comps:
+                break
+
+            scanned += len(comps)
+            for comp in comps:
+                _match_component(comp)
+
+            if target_slugs.issubset(found.keys()):
+                break
+
+            # API가 알려주는 next_page 유무만 종료 판단에 사용하고,
+            # 실제 다음 요청 URL은 위에서 직접 구성해 filter가 사라지는 문제를 방지한다.
+            if not payload.get("meta", {}).get("next_page"):
+                break
+
+            page += 1
+
+        return scanned, page
+
+    # 1) 서비스 자체의 상태를 얻기 위해 top-level 컴포넌트를 먼저 전 페이지 탐색
+    scanned_top, last_top_page = _scan_component_pages(top_level_only=True)
+    print(f"  -> [디버그] top-level 컴포넌트 {scanned_top}개 스캔 (마지막 page={last_top_page})")
+
+    # 2) 혹시 top-level 이름/URL 구조가 바뀐 서비스가 있으면 전체 트리에서 폴백 탐색
     missing = target_slugs - found.keys()
-    page = 1
-    max_pages = 40  # 안전장치: 전체 컴포넌트 수가 매우 많아도 무한 루프에 빠지지 않도록 제한
-    total_scanned = 0
-    while missing and page <= max_pages:
-        try:
-            payload = _http_get_json(f"{STATUS_API_BASE}?per_page=100&page={page}")
-        except Exception as e:
-            print(f"  -> [경고] status.broadcom.com 컴포넌트 목록(page={page}) 조회 실패: {e}")
-            break
+    if missing:
+        scanned_all, last_all_page = _scan_component_pages(top_level_only=False)
+        print(f"  -> [디버그] 전체 컴포넌트 {scanned_all}개 스캔 (마지막 page={last_all_page})")
 
-        comps = payload.get("components", [])
-        if not comps:
-            break
-        total_scanned += len(comps)
-
-        for comp in comps:
-            _match_component(comp)
-
-        missing = target_slugs - found.keys()
-        if not missing or not payload.get("meta", {}).get("next_page"):
-            break
-        page += 1
-
-    print(f"  -> [디버그] 전체 페이지네이션으로 총 {total_scanned}개 컴포넌트 스캔 (마지막 page={page})")
-
-    # 3) 그래도 못 찾은 게 있으면 디버그 로그를 남긴다 (다음 실패 원인 추적용)
     still_missing = target_slugs - found.keys()
     if still_missing:
         missing_names = [s["name"] for s in BROADCOM_STATUS_SERVICES if s["slug"] in still_missing]
@@ -189,11 +197,10 @@ def fetch_broadcom_status():
             print(
                 f"     id={comp.get('id')!r} name={comp.get('name')!r} "
                 f"url={comp.get('url')!r} state={comp.get('state')!r} "
-                f"parent_id={comp.get('parent_id')!r} group={comp.get('group')!r}"
+                f"parent_id={comp.get('parent_id')!r}"
             )
     else:
-        print("  -> [디버그] 'ztna'/'isolation' 키워드가 들어간 컴포넌트를 API 응답에서 전혀 찾지 못함 "
-              "(이 두 서비스가 status.broadcom.com API 자체에 노출되지 않는다는 뜻일 수 있음)")
+        print("  -> [디버그] 'ztna'/'isolation' 키워드가 들어간 컴포넌트를 API 응답에서 전혀 찾지 못함")
 
     checked_at = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
     services = []
