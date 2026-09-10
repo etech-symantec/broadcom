@@ -8,13 +8,41 @@ Tabulator.js 가 바로 소비할 수 있는 형태(레코드 배열)로 출력�
 
 import json
 import sys
+import urllib.error
+import urllib.request
 from datetime import datetime, date, timezone
 from pathlib import Path
+from urllib.parse import urlparse
 
 import openpyxl
 
 DATA_DIR = Path("data")
 DST = Path("docs/data.json")
+
+# ---------------------------------------------------------------------------
+# status.broadcom.com 모아보기 설정
+# ---------------------------------------------------------------------------
+STATUS_DST = Path("docs/status.json")
+STATUS_API_BASE = "https://status.broadcom.com/api/v1/components"
+STATUS_PAGE_BASE = "https://status.broadcom.com/services"
+
+# 모아볼 서비스 목록 (slug 는 status.broadcom.com/services/<slug> 의 마지막 경로)
+BROADCOM_STATUS_SERVICES = [
+    {"slug": "cloud-secure-web-gateway", "name": "Cloud Secure Web Gateway"},
+    {"slug": "cloudsoc-casb", "name": "CloudSOC CASB"},
+    {"slug": "dlp-cloud", "name": "DLP Cloud"},
+    {"slug": "edge-secure-web-gateway", "name": "Edge Secure Web Gateway"},
+    {"slug": "intelligence-services-webfilter", "name": "Intelligence Services / WebFilter"},
+    {"slug": "symantec-ztna", "name": "Symantec ZTNA"},
+    {"slug": "web-isolation", "name": "Web Isolation"},
+]
+
+# status.broadcom.com API 의 state 값 -> 화면 표시용 라벨/CSS 매핑
+STATUS_STATE_LABELS = {
+    "operational": {"label": "정상", "css": "up"},
+    "degraded": {"label": "장애 발생", "css": "down"},
+    "under-maintenance": {"label": "점검 중", "css": "warn"},
+}
 
 
 def find_xlsx():
@@ -36,7 +64,114 @@ def normalize(value):
     return value
 
 
+def _http_get_json(url, timeout=15):
+    req = urllib.request.Request(
+        url,
+        headers={
+            "User-Agent": "Mozilla/5.0 (compatible; broadcom-status-checker/1.0)",
+            "Accept": "application/json",
+        },
+    )
+    with urllib.request.urlopen(req, timeout=timeout) as resp:
+        return json.loads(resp.read().decode("utf-8"))
+
+
+def _slug_from_service_url(url):
+    """component['url'] (예: https://status.broadcom.com/services/dlp-cloud) 에서 slug만 추출.
+    최상위(top-level) 컴포넌트만 url 값을 가지므로, 이 값이 있으면 그 자체로 매칭 키가 된다."""
+    if not url:
+        return None
+    parts = [p for p in urlparse(url).path.split("/") if p]
+    if len(parts) >= 2 and parts[0] == "services":
+        return parts[1]
+    return None
+
+
+def fetch_broadcom_status():
+    """status.broadcom.com 에서 BROADCOM_STATUS_SERVICES 에 정의된 서비스들의
+    현재 상태(state)를 모아서 반환한다. 네트워크 실패 등은 여기서 흡수하고
+    실패한 서비스는 state='unknown' 으로 표시한다 (전체 빌드를 막지 않기 위함)."""
+    target_slugs = {s["slug"] for s in BROADCOM_STATUS_SERVICES}
+    found = {}
+
+    # 1) 가능하면 top-level 컴포넌트만 필터링해서 빠르게 조회
+    try:
+        payload = _http_get_json(f"{STATUS_API_BASE}?filter[parent_id_null]=true&per_page=100")
+        for comp in payload.get("components", []):
+            slug = _slug_from_service_url(comp.get("url"))
+            if slug in target_slugs and slug not in found:
+                found[slug] = comp
+    except Exception as e:
+        print(f"  -> [경고] status.broadcom.com top-level 컴포넌트 조회 실패: {e}")
+
+    # 2) 필터가 무시되었거나 일부를 못 찾았으면, 전체 컴포넌트를 페이지네이션하며 보강 탐색
+    #    (컴포넌트 목록은 부모 -> 자식 순서로 나열되므로 최상위 항목은 앞쪽에 몰려있지 않을 수 있다)
+    missing = target_slugs - found.keys()
+    page = 1
+    max_pages = 40  # 안전장치: 전체 컴포넌트 수가 매우 많아도 무한 루프에 빠지지 않도록 제한
+    while missing and page <= max_pages:
+        try:
+            payload = _http_get_json(f"{STATUS_API_BASE}?page={page}")
+        except Exception as e:
+            print(f"  -> [경고] status.broadcom.com 컴포넌트 목록(page={page}) 조회 실패: {e}")
+            break
+
+        comps = payload.get("components", [])
+        if not comps:
+            break
+
+        for comp in comps:
+            slug = _slug_from_service_url(comp.get("url"))
+            if slug in target_slugs and slug not in found:
+                found[slug] = comp
+
+        missing = target_slugs - found.keys()
+        if not missing or not payload.get("meta", {}).get("next_page"):
+            break
+        page += 1
+
+    checked_at = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    services = []
+    for meta in BROADCOM_STATUS_SERVICES:
+        slug = meta["slug"]
+        comp = found.get(slug)
+        state = comp.get("state") if comp else None
+        label_info = STATUS_STATE_LABELS.get(state, {"label": "확인 필요", "css": "unknown"})
+        services.append({
+            "name": meta["name"],
+            "slug": slug,
+            "url": (comp.get("url") if comp else None) or f"{STATUS_PAGE_BASE}/{slug}",
+            "state": state or "unknown",
+            "state_label": label_info["label"],
+            "state_css": label_info["css"],
+            "component_updated_at": comp.get("updated_at") if comp else None,
+        })
+
+    return {"checked_at": checked_at, "services": services}
+
+
+def update_broadcom_status():
+    """status.broadcom.com 모아보기 결과를 docs/status.json 에 기록한다.
+    이 단계가 실패하더라도 xlsx -> data.json 변환(메인 파이프라인)은 계속 진행되어야 한다."""
+    print("status.broadcom.com 서비스 상태 조회 중...")
+    try:
+        payload = fetch_broadcom_status()
+    except Exception as e:
+        print(f"  -> [에러] status.broadcom.com 상태 조회 전체 실패: {e}")
+        return
+
+    STATUS_DST.parent.mkdir(parents=True, exist_ok=True)
+    STATUS_DST.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+
+    for svc in payload["services"]:
+        print(f"  - {svc['name']}: {svc['state_label']} ({svc['state']})")
+    print(f"OK: {len(payload['services'])}개 서비스 상태를 {STATUS_DST} 로 저장했습니다.\n")
+
+
 def main():
+    # status.broadcom.com 모아보기는 xlsx 변환과 독립적으로 먼저 실행한다.
+    update_broadcom_status()
+
     src = find_xlsx()
     if src is None:
         print(f"ERROR: {DATA_DIR}/ 폴더에 xlsx 파일이 없습니다.", file=sys.stderr)
