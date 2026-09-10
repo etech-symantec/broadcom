@@ -1,0 +1,68 @@
+{
+  "checked_at": "2026-09-10T01:04:14Z",
+  "services": [
+    {
+      "name": "Cloud Secure Web Gateway",
+      "slug": "cloud-secure-web-gateway",
+      "url": "https://status.broadcom.com/services/cloud-secure-web-gateway",
+      "state": "under-maintenance",
+      "state_label": "점검 중",
+      "state_css": "warn",
+      "component_updated_at": "2026-09-09T09:54:08.213Z"
+    },
+    {
+      "name": "CloudSOC CASB",
+      "slug": "cloudsoc-casb",
+      "url": "https://status.broadcom.com/services/cloudsoc-casb",
+      "state": "operational",
+      "state_label": "정상",
+      "state_css": "up",
+      "component_updated_at": "2026-09-05T12:34:11.055Z"
+    },
+    {
+      "name": "DLP Cloud",
+      "slug": "dlp-cloud",
+      "url": "https://status.broadcom.com/services/dlp-cloud",
+      "state": "operational",
+      "state_label": "정상",
+      "state_css": "up",
+      "component_updated_at": "2026-08-26T18:31:56.271Z"
+    },
+    {
+      "name": "Edge Secure Web Gateway",
+      "slug": "edge-secure-web-gateway",
+      "url": "https://status.broadcom.com/services/edge-secure-web-gateway",
+      "state": "operational",
+      "state_label": "정상",
+      "state_css": "up",
+      "component_updated_at": "2026-09-02T18:01:58.370Z"
+    },
+    {
+      "name": "Intelligence Services / WebFilter",
+      "slug": "intelligence-services-webfilter",
+      "url": "https://status.broadcom.com/services/intelligence-services-webfilter",
+      "state": "operational",
+      "state_label": "정상",
+      "state_css": "up",
+      "component_updated_at": "2026-08-26T18:48:59.288Z"
+    },
+    {
+      "name": "Symantec ZTNA",
+      "slug": "symantec-ztna",
+      "url": "https://status.broadcom.com/services/symantec-ztna",
+      "state": "operational",
+      "state_label": "정상",
+      "state_css": "up",
+      "component_updated_at": "2026-09-01T13:12:08.949Z"
+    },
+    {
+      "name": "Web Isolation",
+      "slug": "web-isolation",
+      "url": "https://status.broadcom.com/services/web-isolation",
+      "state": "operational",
+      "state_label": "정상",
+      "state_css": "up",
+      "component_updated_at": "2026-08-26T18:48:59.323Z"
+    }
+  ]
+}
