@@ -216,7 +216,6 @@
     background: #1e3a5f;
     color: white;
     padding: 8px 20px;
-    border-radius: 14px 14px 0 0;
 
     display: flex;
     justify-content: space-between;
@@ -402,37 +401,21 @@
   .broadcom-status-label.warn { background: #fef3c7; color: #92400e; }
   .broadcom-status-label.unknown { background: #f3f4f6; color: #6b7280; }
 
-  /* ---------- 좌측 메뉴 내 상태 모아보기 ---------- */
-  .left-status-box {
-    margin: 2px 0 10px;
-    padding: 8px 8px 9px;
-    border-radius: 10px;
-    border: 1px solid #cbd5e1;
-    background: rgba(148,163,184,0.08);
+  /* ---------- 우측 상단 상태 모아보기 ---------- */
+  .right-status-box {
+    background: #ffffff;
+    border-bottom: 1px solid #e5e7eb;
+    border-radius: 14px 14px 0 0;
+    padding: 12px 16px 10px;
   }
-  .left-status-box h4 {
+  .right-status-box-head {
     display: flex;
     align-items: center;
-    margin: 0 0 4px;
-    color: #1e3a5f;
-  }
-  .broadcom-status-grid-vertical {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    padding: 0;
-    margin: 0;
-  }
-  .broadcom-status-grid-vertical .broadcom-status-item {
-    width: 100%;
-    box-sizing: border-box;
     justify-content: space-between;
-    font-size: 0.72rem;
-    padding: 6px 9px;
-  }
-  .broadcom-status-grid-vertical .broadcom-status-name {
-    overflow: hidden;
-    text-overflow: ellipsis;
+    color: #1e3a5f;
+    font-size: 0.95rem;
+    font-weight: 700;
+    margin-bottom: 8px;
   }
 
   /* 사용자 버튼 및 트리 선 디자인 */
@@ -586,20 +569,6 @@
 
     <hr style="border:0; border-top:1px solid #d1d5db; margin: 14px 0;">
 
-    <!-- 🌐 Broadcom 서비스 상태 모아보기 (좌측 메뉴 삽입) -->
-    <div class="left-status-box">
-      <h4 style="font-size:0.85rem; justify-content:space-between;">
-        <span>🌐 상태 모아보기</span>
-        <button class="refresh-btn" style="padding:3px 7px; font-size:0.68rem;" onclick="fetchBroadcomStatus()">🔄</button>
-      </h4>
-      <div id="broadcomStatusTime" style="font-size:0.65rem; color:#64748b; margin:-4px 0 6px;"></div>
-      <div id="broadcomStatusContainer" class="broadcom-status-grid-vertical">
-        <span style="font-size:0.75rem; color:#64748b;">상태 정보를 불러오는 중입니다...</span>
-      </div>
-      <p style="margin:6px 2px 0; font-size:0.62rem; color:#94a3b8; line-height:1.3;">
-        ※ 클릭 시 status.broadcom.com으로 이동합니다.
-      </p>
-    </div>
     <!-- 서브메뉴는 JS에서 동적으로 삽입 -->
     
     <!-- Divider -->
@@ -638,6 +607,17 @@
 
   <!-- 우측 iframe 영역 -->
   <div class="right-card">
+    <!-- 🌐 Broadcom 서비스 상태 모아보기 (우측 상단 삽입) -->
+    <div id="rightStatusBox" class="right-status-box">
+      <div class="right-status-box-head">
+        <span>🌐 Broadcom 서비스 상태 모아보기 <span id="broadcomStatusTime" style="font-size:0.7rem; color:#94a3b8; font-weight:normal; margin-left:8px;"></span></span>
+        <button class="refresh-btn" style="padding:3px 8px; font-size:0.68rem;" onclick="fetchBroadcomStatus()">🔄</button>
+      </div>
+      <div id="broadcomStatusContainer" class="broadcom-status-grid">
+        <span style="font-size:0.8rem; color:#64748b;">상태 정보를 불러오는 중입니다...</span>
+      </div>
+    </div>
+
     <div class="iframe-header">
         <span id="iframeTitle">📄 Broadcom KB Preview</span>
         <button class="kb-link-btn" id="kbLinkBtn" onclick="openKB()" disabled>🔗 원본 페이지</button>
