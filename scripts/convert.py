@@ -150,14 +150,42 @@ def fetch_broadcom_status():
     return {"checked_at": checked_at, "services": services}
 
 
+def _load_existing_status():
+    """git 체크아웃에 이미 있는 이전 status.json을 읽어온다 (없으면 None)."""
+    if not STATUS_DST.exists():
+        return None
+    try:
+        return json.loads(STATUS_DST.read_text(encoding="utf-8"))
+    except Exception:
+        return None
+
+
+def _same_states(old_services, new_services):
+    """slug+state 조합만 비교한다. component_updated_at 등 부가 정보는 무시."""
+    def key(services):
+        return sorted((s.get("slug"), s.get("state")) for s in services or [])
+    return key(old_services) == key(new_services)
+
+
 def update_broadcom_status():
     """status.broadcom.com 모아보기 결과를 docs/status.json 에 기록한다.
-    이 단계가 실패하더라도 xlsx -> data.json 변환(메인 파이프라인)은 계속 진행되어야 한다."""
+    이 단계가 실패하더라도 xlsx -> data.json 변환(메인 파이프라인)은 계속 진행되어야 한다.
+
+    실제 서비스 상태(state)가 이전 저장 내용과 동일하면 파일을 다시 쓰지 않는다.
+    (그래야 스케줄러가 자주 돌아도 checked_at 만 바뀌는 불필요한 git commit이 쌓이지 않는다)
+    """
     print("status.broadcom.com 서비스 상태 조회 중...")
     try:
         payload = fetch_broadcom_status()
     except Exception as e:
         print(f"  -> [에러] status.broadcom.com 상태 조회 전체 실패: {e}")
+        return
+
+    prev = _load_existing_status()
+    if prev is not None and _same_states(prev.get("services"), payload["services"]):
+        print("  -> 상태 변화 없음: status.json 재작성을 생략합니다 (불필요한 커밋 방지).")
+        for svc in payload["services"]:
+            print(f"  - {svc['name']}: {svc['state_label']} ({svc['state']})")
         return
 
     STATUS_DST.parent.mkdir(parents=True, exist_ok=True)
@@ -197,6 +225,19 @@ def main():
         for key, value in zip(header, row):
             record[key] = normalize(value)
         records.append(record)
+
+    # xlsx 실제 내용(columns/records)이 이전 data.json과 동일하면 generated_at도 갱신하지 않는다.
+    # (schedule cron으로 매번 돌아도, 실제로 xlsx가 바뀌지 않았으면 불필요한 git diff/commit이 생기지 않도록)
+    prev = None
+    if DST.exists():
+        try:
+            prev = json.loads(DST.read_text(encoding="utf-8"))
+        except Exception:
+            prev = None
+
+    if prev is not None and prev.get("columns") == header and prev.get("records") == records:
+        print(f"OK: xlsx 내용 변화 없음. {DST} 재작성을 생략합니다 (불필요한 커밋 방지).")
+        return
 
     DST.parent.mkdir(parents=True, exist_ok=True)
     payload = {
