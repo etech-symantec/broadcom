@@ -612,7 +612,7 @@
           <span style="font-size:0.68rem; font-weight:300; color:#94a3b8; white-space:nowrap;">
             ※ 매일 07:00 ~ 20:00 사이 1시간 간격으로 자동 확인. 그 외 시간이거나 최신 상태가 필요하면 🔄 새로고침 버튼 클릭
           </span>
-          <button class="refresh-btn" style="padding:3px 8px; font-size:0.68rem;" onclick="fetchBroadcomStatus()">🔄</button>
+          <button class="refresh-btn" style="padding:3px 8px; font-size:0.68rem;" onclick="refreshBroadcomStatusLive(this)">🔄</button>
         </span>
       </div>
       <div id="broadcomStatusContainer" class="broadcom-status-grid">
@@ -1248,45 +1248,242 @@ function formatDate(date) {
 document.addEventListener("DOMContentLoaded", fetchProxyLog);
 
 /* =========================================================
-   Broadcom 서비스 상태 모아보기 (status.broadcom.com)
-   docs/status.json (convert.py가 빌드 시점에 생성) 을 읽어와 카드로 표시
+   Broadcom 서비스 상태 모아보기
+   - 최초 로딩: docs/status.json 사용
+   - 🔄 새로고침: status.broadcom.com API를 브라우저에서 직접 다시 조회
    ========================================================= */
-function fetchBroadcomStatus() {
+const BROADCOM_STATUS_SERVICES = [
+  { slug: "cloud-secure-web-gateway", name: "Cloud Secure Web Gateway" },
+  { slug: "cloudsoc-casb", name: "CloudSOC CASB" },
+  { slug: "dlp-cloud", name: "DLP Cloud" },
+  { slug: "edge-secure-web-gateway", name: "Edge Secure Web Gateway" },
+  { slug: "intelligence-services-webfilter", name: "Intelligence Services / WebFilter" },
+  { slug: "symantec-ztna", name: "Symantec ZTNA" },
+  { slug: "web-isolation", name: "Web Isolation" },
+];
+
+const BROADCOM_STATUS_STATE = {
+  "operational":       { label: "정상",      css: "up" },
+  "degraded":          { label: "장애 발생", css: "down" },
+  "under-maintenance": { label: "점검 중",   css: "warn" },
+  "under_maintenance": { label: "점검 중",   css: "warn" },
+};
+
+function normalizeBroadcomName(value) {
+  return String(value || "").trim().toLowerCase().replace(/\s+/g, " ");
+}
+
+function broadcomSlugFromUrl(url) {
+  if (!url) return "";
+  try {
+    const parts = new URL(url).pathname.split("/").filter(Boolean);
+    const idx = parts.indexOf("services");
+    return (idx >= 0 && idx + 1 < parts.length) ? parts[parts.length - 1] : "";
+  } catch (_) {
+    return "";
+  }
+}
+
+function renderBroadcomStatus(payload, sourceText) {
   const container = document.getElementById("broadcomStatusContainer");
   const timeEl = document.getElementById("broadcomStatusTime");
+  const services = payload.services || [];
+
+  if (timeEl) {
+    let checked = payload.checked_at || "";
+    if (checked) checked = checked.replace("T", " ").replace("Z", " UTC");
+    timeEl.textContent = checked
+      ? `마지막 확인: ${checked}${sourceText ? " · " + sourceText : ""}`
+      : (sourceText || "");
+  }
+
+  if (!services.length) {
+    container.innerHTML = '<span style="font-size:0.85rem; color:#64748b;">표시할 서비스가 없습니다.</span>';
+    return;
+  }
+
+  const cssClass = {
+    up: "status-up",
+    down: "status-down",
+    warn: "status-warn",
+    unknown: "status-unknown"
+  };
+
+  container.innerHTML = '<ul class="broadcom-status-grid"></ul>';
+  const grid = container.querySelector(".broadcom-status-grid");
+
+  services.forEach(svc => {
+    const dotClass = cssClass[svc.state_css] || "status-unknown";
+    const li = document.createElement("li");
+    li.className = "broadcom-status-item";
+    li.title = "status.broadcom.com에서 열기";
+    li.onclick = () => window.open(svc.url, "_blank");
+    li.innerHTML = `
+      <span class="status-dot ${dotClass}"></span>
+      <span class="broadcom-status-name">${svc.name}</span>
+      <span class="broadcom-status-label ${svc.state_css}">${svc.state_label}</span>
+    `;
+    grid.appendChild(li);
+  });
+}
+
+/* 최초 화면은 기존 status.json을 빠르게 표시 */
+function fetchBroadcomStatus() {
+  const container = document.getElementById("broadcomStatusContainer");
   container.innerHTML = '<span style="font-size:0.85rem; color:#64748b;">상태 정보를 불러오는 중입니다...</span>';
 
-  fetch("status.json", { cache: "no-store" })
-    .then(r => { if (!r.ok) throw new Error("status.json 로드 실패 (" + r.status + ")"); return r.json(); })
-    .then(payload => {
-      const services = payload.services || [];
-      if (timeEl) {
-        timeEl.textContent = payload.checked_at ? "마지막 확인: " + payload.checked_at.replace("T", " ").replace("Z", " UTC") : "";
-      }
-      if (!services.length) {
-        container.innerHTML = '<span style="font-size:0.85rem; color:#64748b;">표시할 서비스가 없습니다.</span>';
-        return;
-      }
-      const cssClass = { up: "status-up", down: "status-down", warn: "status-warn", unknown: "status-unknown" };
-      container.innerHTML = '<ul class="broadcom-status-grid"></ul>';
-      const grid = container.querySelector(".broadcom-status-grid");
-      services.forEach(svc => {
-        const dotClass = cssClass[svc.state_css] || "status-unknown";
-        const li = document.createElement("li");
-        li.className = "broadcom-status-item";
-        li.title = "status.broadcom.com에서 열기";
-        li.onclick = () => window.open(svc.url, "_blank");
-        li.innerHTML = `
-          <span class="status-dot ${dotClass}"></span>
-          <span class="broadcom-status-name">${svc.name}</span>
-          <span class="broadcom-status-label ${svc.state_css}">${svc.state_label}</span>
-        `;
-        grid.appendChild(li);
-      });
+  fetch(`status.json?_=${Date.now()}`, { cache: "no-store" })
+    .then(r => {
+      if (!r.ok) throw new Error("status.json 로드 실패 (" + r.status + ")");
+      return r.json();
     })
+    .then(payload => renderBroadcomStatus(payload, "자동 확인 결과"))
     .catch(err => {
       container.innerHTML = '<span style="font-size:0.85rem; color:#ef4444;">⚠️ ' + err.message + '</span>';
     });
+}
+
+/*
+ * Broadcom API 한 묶음을 페이지 끝까지 직접 조회한다.
+ * API는 한 번에 최대 25개이므로 meta.next_page를 따라간다.
+ */
+async function fetchBroadcomComponentPages(firstUrl) {
+  const all = [];
+  let url = firstUrl;
+  let safety = 0;
+
+  while (url && safety < 50) {
+    const separator = url.includes("?") ? "&" : "?";
+    const response = await fetch(`${url}${separator}_=${Date.now()}`, {
+      method: "GET",
+      cache: "no-store",
+      headers: { "Accept": "application/json" }
+    });
+
+    if (!response.ok) {
+      throw new Error(`Broadcom API 조회 실패 (${response.status})`);
+    }
+
+    const payload = await response.json();
+    all.push(...(payload.components || []));
+
+    const next = payload.meta && payload.meta.next_page;
+    if (!next) break;
+
+    url = next.startsWith("http")
+      ? next
+      : `https://status.broadcom.com${next.startsWith("/") ? "" : "/"}${next}`;
+    safety++;
+  }
+
+  return all;
+}
+
+function findBroadcomComponent(components, service) {
+  const targetName = normalizeBroadcomName(service.name);
+
+  // 1순위: 최상위 컴포넌트의 URL slug 정확히 일치
+  let match = components.find(c =>
+    c.parent_id == null && broadcomSlugFromUrl(c.url) === service.slug
+  );
+  if (match) return match;
+
+  // 2순위: 최상위 컴포넌트 이름 정확히 일치
+  match = components.find(c =>
+    c.parent_id == null && normalizeBroadcomName(c.name) === targetName
+  );
+  if (match) return match;
+
+  // 3순위: 전체 컴포넌트에서 URL slug 정확히 일치
+  match = components.find(c => broadcomSlugFromUrl(c.url) === service.slug);
+  if (match) return match;
+
+  // 4순위: 전체 컴포넌트에서 이름 정확히 일치
+  match = components.find(c => normalizeBroadcomName(c.name) === targetName);
+  return match || null;
+}
+
+async function queryBroadcomStatusLive() {
+  /* 먼저 최상위 서비스만 조회 */
+  let components = await fetchBroadcomComponentPages(
+    "https://status.broadcom.com/api/v1/components?filter[parent_id_null]=true"
+  );
+
+  let services = BROADCOM_STATUS_SERVICES.map(service => ({
+    service,
+    component: findBroadcomComponent(components, service)
+  }));
+
+  /* ZTNA/Web Isolation 등 누락 항목이 있으면 전체 컴포넌트까지 추가 조회 */
+  if (services.some(x => !x.component)) {
+    const allComponents = await fetchBroadcomComponentPages(
+      "https://status.broadcom.com/api/v1/components"
+    );
+
+    // 같은 컴포넌트가 겹쳐도 문제 없도록 합침
+    const byId = new Map();
+    [...components, ...allComponents].forEach(c => {
+      byId.set(String(c.id ?? `${c.name}|${c.parent_id}`), c);
+    });
+    components = [...byId.values()];
+
+    services = BROADCOM_STATUS_SERVICES.map(service => ({
+      service,
+      component: findBroadcomComponent(components, service)
+    }));
+  }
+
+  return {
+    checked_at: new Date().toISOString(),
+    services: services.map(({ service, component }) => {
+      const state = component && component.state ? component.state : "unknown";
+      const info = BROADCOM_STATUS_STATE[state] || { label: "확인 필요", css: "unknown" };
+      return {
+        name: service.name,
+        slug: service.slug,
+        url: `https://status.broadcom.com/services/${service.slug}`,
+        state,
+        state_label: info.label,
+        state_css: info.css,
+        component_updated_at: component ? component.updated_at || null : null,
+      };
+    })
+  };
+}
+
+/* 🔄 버튼 전용: status.json이 아니라 Broadcom API를 즉시 직접 조회 */
+async function refreshBroadcomStatusLive(btn) {
+  const container = document.getElementById("broadcomStatusContainer");
+  const oldHtml = container.innerHTML;
+  const timeEl = document.getElementById("broadcomStatusTime");
+  const oldTime = timeEl ? timeEl.textContent : "";
+
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = "⏳";
+  }
+  container.innerHTML = '<span style="font-size:0.85rem; color:#2563eb;">Broadcom에서 최신 상태를 직접 조회 중입니다...</span>';
+
+  try {
+    const payload = await queryBroadcomStatusLive();
+    renderBroadcomStatus(payload, "실시간 직접 조회");
+  } catch (err) {
+    console.error("Broadcom 실시간 조회 실패:", err);
+
+    // 기존 표시값은 유지하고, 실패 사실만 헤더에 명확히 표시
+    container.innerHTML = oldHtml;
+    if (timeEl) timeEl.textContent = oldTime + " · 직접 조회 실패";
+    alert(
+      "Broadcom 실시간 직접 조회에 실패했습니다.\n\n" +
+      err.message +
+      "\n\n브라우저의 CORS 정책 또는 일시적인 Broadcom API 통신 문제일 수 있습니다."
+    );
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = "🔄";
+    }
+  }
 }
 
 document.addEventListener("DOMContentLoaded", fetchBroadcomStatus);
