@@ -8,11 +8,12 @@ on:
       - "data/*.xlsx"
       - "scripts/convert.py"
       - "docs/index.html"
-  # status.broadcom.com 상태 모아보기를 주기적으로 새로고침 (UTC 기준 3시간 간격 = 매일 8회)
+  # status.broadcom.com 상태 모아보기를 주기적으로 새로고침
+  # 매일 한국시간(KST, UTC+9) 07:00 ~ 20:00 사이에만 1시간 간격으로 실행 (UTC 기준 22,23시 + 0~11시 = 하루 14회)
   # convert.py는 실제 상태(state)가 바뀔 때만 status.json을 다시 쓰므로,
   # 아무 변화가 없으면 커밋 없이 그냥 조용히 종료된다.
   schedule:
-    - cron: "0 */3 * * *"
+    - cron: "0 0-11,22-23 * * *"
   # 필요할 때 수동으로도 실행 가능
   workflow_dispatch:
 
