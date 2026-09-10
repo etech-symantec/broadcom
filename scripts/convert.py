@@ -108,10 +108,26 @@ def fetch_broadcom_status():
     # 이름 -> slug 매핑 (url 매칭이 실패했을 때 이름으로 폴백하기 위함)
     target_names = {s["name"]: s["slug"] for s in BROADCOM_STATUS_SERVICES}
     found = {}
+    # 디버그용: "ztna" 또는 "isolation"이 이름/url에 들어간 컴포넌트는 매칭 여부와 무관하게 전부 기록해둔다.
+    # (다음 빌드 로그에서 Broadcom API가 실제로 이 두 서비스를 뭐라고 부르는지 그대로 확인하기 위함)
+    debug_candidates = []
+    seen_debug_keys = set()
+
+    def _record_debug(comp):
+        name = (comp.get("name") or "")
+        url = (comp.get("url") or "")
+        haystack = f"{name} {url}".lower()
+        if "ztna" in haystack or "isolation" in haystack:
+            key = (comp.get("id"), name, url)
+            if key not in seen_debug_keys:
+                seen_debug_keys.add(key)
+                debug_candidates.append(comp)
 
     def _match_component(comp):
         """comp를 target 서비스 중 하나와 매칭시켜 found에 채운다.
         1) url/slug 매칭을 먼저 시도하고, 실패하면 2) 이름 매칭으로 폴백한다."""
+        _record_debug(comp)
+
         slug = _slug_from_service_url(comp.get("url"))
         if slug in target_slugs and slug not in found:
             found[slug] = comp
@@ -126,7 +142,9 @@ def fetch_broadcom_status():
     # 1) 가능하면 top-level 컴포넌트만 필터링해서 빠르게 조회
     try:
         payload = _http_get_json(f"{STATUS_API_BASE}?filter[parent_id_null]=true&per_page=100")
-        for comp in payload.get("components", []):
+        comps_phase1 = payload.get("components", [])
+        print(f"  -> [디버그] top-level 조회 결과: {len(comps_phase1)}개 컴포넌트")
+        for comp in comps_phase1:
             _match_component(comp)
     except Exception as e:
         print(f"  -> [경고] status.broadcom.com top-level 컴포넌트 조회 실패: {e}")
@@ -136,6 +154,7 @@ def fetch_broadcom_status():
     missing = target_slugs - found.keys()
     page = 1
     max_pages = 40  # 안전장치: 전체 컴포넌트 수가 매우 많아도 무한 루프에 빠지지 않도록 제한
+    total_scanned = 0
     while missing and page <= max_pages:
         try:
             payload = _http_get_json(f"{STATUS_API_BASE}?per_page=100&page={page}")
@@ -146,6 +165,7 @@ def fetch_broadcom_status():
         comps = payload.get("components", [])
         if not comps:
             break
+        total_scanned += len(comps)
 
         for comp in comps:
             _match_component(comp)
@@ -155,11 +175,25 @@ def fetch_broadcom_status():
             break
         page += 1
 
+    print(f"  -> [디버그] 전체 페이지네이션으로 총 {total_scanned}개 컴포넌트 스캔 (마지막 page={page})")
+
     # 3) 그래도 못 찾은 게 있으면 디버그 로그를 남긴다 (다음 실패 원인 추적용)
     still_missing = target_slugs - found.keys()
     if still_missing:
         missing_names = [s["name"] for s in BROADCOM_STATUS_SERVICES if s["slug"] in still_missing]
         print(f"  -> [경고] 다음 서비스는 컴포넌트 목록에서 끝내 찾지 못했습니다: {', '.join(missing_names)}")
+
+    if debug_candidates:
+        print(f"  -> [디버그] 'ztna'/'isolation' 키워드가 들어간 컴포넌트 {len(debug_candidates)}개 발견:")
+        for comp in debug_candidates:
+            print(
+                f"     id={comp.get('id')!r} name={comp.get('name')!r} "
+                f"url={comp.get('url')!r} state={comp.get('state')!r} "
+                f"parent_id={comp.get('parent_id')!r} group={comp.get('group')!r}"
+            )
+    else:
+        print("  -> [디버그] 'ztna'/'isolation' 키워드가 들어간 컴포넌트를 API 응답에서 전혀 찾지 못함 "
+              "(이 두 서비스가 status.broadcom.com API 자체에 노출되지 않는다는 뜻일 수 있음)")
 
     checked_at = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
     services = []
