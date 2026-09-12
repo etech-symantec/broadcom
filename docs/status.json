@@ -1,5 +1,5 @@
 {
-  "checked_at": "2026-09-10T03:17:59Z",
+  "checked_at": "2026-09-12T01:57:05Z",
   "services": [
     {
       "name": "Cloud Secure Web Gateway",
@@ -8,7 +8,7 @@
       "state": "under-maintenance",
       "state_label": "점검 중",
       "state_css": "warn",
-      "component_updated_at": "2026-09-09T09:54:08.213Z"
+      "component_updated_at": "2026-09-11T22:31:38.405Z"
     },
     {
       "name": "CloudSOC CASB",
@@ -32,9 +32,9 @@
       "name": "Edge Secure Web Gateway",
       "slug": "edge-secure-web-gateway",
       "url": "https://status.broadcom.com/services/edge-secure-web-gateway",
-      "state": "operational",
-      "state_label": "정상",
-      "state_css": "up",
+      "state": "under-maintenance",
+      "state_label": "점검 중",
+      "state_css": "warn",
       "component_updated_at": "2026-09-02T18:01:58.370Z"
     },
     {
@@ -53,7 +53,7 @@
       "state": "operational",
       "state_label": "정상",
       "state_css": "up",
-      "component_updated_at": "2026-09-01T13:12:08.949Z"
+      "component_updated_at": "2026-09-11T07:12:22.241Z"
     },
     {
       "name": "Web Isolation",
