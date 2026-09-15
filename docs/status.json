@@ -1,5 +1,5 @@
 {
-  "checked_at": "2026-09-14T02:08:16Z",
+  "checked_at": "2026-09-15T05:33:19Z",
   "services": [
     {
       "name": "Cloud Secure Web Gateway",
@@ -8,15 +8,15 @@
       "state": "under-maintenance",
       "state_label": "점검 중",
       "state_css": "warn",
-      "component_updated_at": "2026-09-11T22:31:38.405Z"
+      "component_updated_at": "2026-09-14T08:57:18.108Z"
     },
     {
       "name": "CloudSOC CASB",
       "slug": "cloudsoc-casb",
       "url": "https://status.broadcom.com/services/cloudsoc-casb",
-      "state": "operational",
-      "state_label": "정상",
-      "state_css": "up",
+      "state": "under-maintenance",
+      "state_label": "점검 중",
+      "state_css": "warn",
       "component_updated_at": "2026-09-05T12:34:11.055Z"
     },
     {
@@ -41,9 +41,9 @@
       "name": "Intelligence Services / WebFilter",
       "slug": "intelligence-services-webfilter",
       "url": "https://status.broadcom.com/services/intelligence-services-webfilter",
-      "state": "operational",
-      "state_label": "정상",
-      "state_css": "up",
+      "state": "under-maintenance",
+      "state_label": "점검 중",
+      "state_css": "warn",
       "component_updated_at": "2026-08-26T18:48:59.288Z"
     },
     {
@@ -59,9 +59,9 @@
       "name": "Web Isolation",
       "slug": "web-isolation",
       "url": "https://status.broadcom.com/services/web-isolation",
-      "state": "operational",
-      "state_label": "정상",
-      "state_css": "up",
+      "state": "under-maintenance",
+      "state_label": "점검 중",
+      "state_css": "warn",
       "component_updated_at": "2026-08-26T18:48:59.323Z"
     }
   ]
