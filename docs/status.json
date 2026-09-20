@@ -1,5 +1,5 @@
 {
-  "checked_at": "2026-09-15T15:19:52Z",
+  "checked_at": "2026-09-20T07:59:53Z",
   "services": [
     {
       "name": "Cloud Secure Web Gateway",
@@ -8,7 +8,7 @@
       "state": "under-maintenance",
       "state_label": "점검 중",
       "state_css": "warn",
-      "component_updated_at": "2026-09-14T08:57:18.108Z"
+      "component_updated_at": "2026-09-18T18:13:27.370Z"
     },
     {
       "name": "CloudSOC CASB",
@@ -17,7 +17,7 @@
       "state": "operational",
       "state_label": "정상",
       "state_css": "up",
-      "component_updated_at": "2026-09-05T12:34:11.055Z"
+      "component_updated_at": "2026-09-15T19:14:12.950Z"
     },
     {
       "name": "DLP Cloud",
@@ -44,15 +44,15 @@
       "state": "operational",
       "state_label": "정상",
       "state_css": "up",
-      "component_updated_at": "2026-08-26T18:48:59.288Z"
+      "component_updated_at": "2026-09-15T19:14:12.967Z"
     },
     {
       "name": "Symantec ZTNA",
       "slug": "symantec-ztna",
       "url": "https://status.broadcom.com/services/symantec-ztna",
-      "state": "operational",
-      "state_label": "정상",
-      "state_css": "up",
+      "state": "under-maintenance",
+      "state_label": "점검 중",
+      "state_css": "warn",
       "component_updated_at": "2026-09-11T07:12:22.241Z"
     },
     {
@@ -62,7 +62,7 @@
       "state": "operational",
       "state_label": "정상",
       "state_css": "up",
-      "component_updated_at": "2026-08-26T18:48:59.323Z"
+      "component_updated_at": "2026-09-15T19:14:13.000Z"
     }
   ]
 }
