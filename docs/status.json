@@ -1,5 +1,5 @@
 {
-  "checked_at": "2026-09-20T07:59:53Z",
+  "checked_at": "2026-09-20T12:54:59Z",
   "services": [
     {
       "name": "Cloud Secure Web Gateway",
@@ -50,9 +50,9 @@
       "name": "Symantec ZTNA",
       "slug": "symantec-ztna",
       "url": "https://status.broadcom.com/services/symantec-ztna",
-      "state": "under-maintenance",
-      "state_label": "점검 중",
-      "state_css": "warn",
+      "state": "operational",
+      "state_label": "정상",
+      "state_css": "up",
       "component_updated_at": "2026-09-11T07:12:22.241Z"
     },
     {
