@@ -1,5 +1,5 @@
 {
-  "checked_at": "2026-09-26T00:13:56Z",
+  "checked_at": "2026-09-26T05:40:17Z",
   "services": [
     {
       "name": "Cloud Secure Web Gateway",
@@ -32,9 +32,9 @@
       "name": "Edge Secure Web Gateway",
       "slug": "edge-secure-web-gateway",
       "url": "https://status.broadcom.com/services/edge-secure-web-gateway",
-      "state": "under-maintenance",
-      "state_label": "점검 중",
-      "state_css": "warn",
+      "state": "operational",
+      "state_label": "정상",
+      "state_css": "up",
       "component_updated_at": "2026-09-15T12:13:07.226Z"
     },
     {
