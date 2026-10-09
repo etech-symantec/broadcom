@@ -1,14 +1,14 @@
 {
-  "checked_at": "2026-10-07T01:05:15Z",
+  "checked_at": "2026-10-09T01:32:05Z",
   "services": [
     {
       "name": "Cloud Secure Web Gateway",
       "slug": "cloud-secure-web-gateway",
       "url": "https://status.broadcom.com/services/cloud-secure-web-gateway",
-      "state": "under-maintenance",
-      "state_label": "점검 중",
-      "state_css": "warn",
-      "component_updated_at": "2026-10-05T02:24:41.698Z"
+      "state": "operational",
+      "state_label": "정상",
+      "state_css": "up",
+      "component_updated_at": "2026-10-08T10:10:59.872Z"
     },
     {
       "name": "CloudSOC CASB",
@@ -17,7 +17,7 @@
       "state": "operational",
       "state_label": "정상",
       "state_css": "up",
-      "component_updated_at": "2026-10-02T00:39:10.222Z"
+      "component_updated_at": "2026-10-08T10:10:59.872Z"
     },
     {
       "name": "DLP Cloud",
@@ -26,7 +26,7 @@
       "state": "operational",
       "state_label": "정상",
       "state_css": "up",
-      "component_updated_at": "2026-08-26T18:31:56.271Z"
+      "component_updated_at": "2026-10-08T10:10:59.872Z"
     },
     {
       "name": "Edge Secure Web Gateway",
@@ -35,7 +35,7 @@
       "state": "operational",
       "state_label": "정상",
       "state_css": "up",
-      "component_updated_at": "2026-09-15T12:13:07.226Z"
+      "component_updated_at": "2026-10-08T10:10:59.872Z"
     },
     {
       "name": "Intelligence Services / WebFilter",
@@ -44,7 +44,7 @@
       "state": "operational",
       "state_label": "정상",
       "state_css": "up",
-      "component_updated_at": "2026-10-02T00:39:10.241Z"
+      "component_updated_at": "2026-10-08T10:10:59.872Z"
     },
     {
       "name": "Symantec ZTNA",
@@ -53,7 +53,7 @@
       "state": "operational",
       "state_label": "정상",
       "state_css": "up",
-      "component_updated_at": "2026-10-05T06:33:26.756Z"
+      "component_updated_at": "2026-10-08T10:10:59.872Z"
     },
     {
       "name": "Web Isolation",
@@ -62,7 +62,7 @@
       "state": "operational",
       "state_label": "정상",
       "state_css": "up",
-      "component_updated_at": "2026-10-02T00:39:10.277Z"
+      "component_updated_at": "2026-10-08T10:10:59.872Z"
     }
   ]
 }
