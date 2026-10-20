@@ -1,13 +1,13 @@
 {
-  "checked_at": "2026-10-20T10:33:50Z",
+  "checked_at": "2026-10-20T15:25:47Z",
   "services": [
     {
       "name": "Cloud Secure Web Gateway",
       "slug": "cloud-secure-web-gateway",
       "url": "https://status.broadcom.com/services/cloud-secure-web-gateway",
-      "state": "degraded",
-      "state_label": "장애 발생",
-      "state_css": "down",
+      "state": "under-maintenance",
+      "state_label": "점검 중",
+      "state_css": "warn",
       "component_updated_at": "2026-10-20T07:01:42.614Z"
     },
     {
@@ -41,9 +41,9 @@
       "name": "Intelligence Services / WebFilter",
       "slug": "intelligence-services-webfilter",
       "url": "https://status.broadcom.com/services/intelligence-services-webfilter",
-      "state": "degraded",
-      "state_label": "장애 발생",
-      "state_css": "down",
+      "state": "operational",
+      "state_label": "정상",
+      "state_css": "up",
       "component_updated_at": "2026-10-20T09:19:49.611Z"
     },
     {
@@ -59,9 +59,9 @@
       "name": "Web Isolation",
       "slug": "web-isolation",
       "url": "https://status.broadcom.com/services/web-isolation",
-      "state": "degraded",
-      "state_label": "장애 발생",
-      "state_css": "down",
+      "state": "operational",
+      "state_label": "정상",
+      "state_css": "up",
       "component_updated_at": "2026-10-20T07:22:09.204Z"
     }
   ]
