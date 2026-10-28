@@ -1,23 +1,23 @@
 {
-  "checked_at": "2026-10-28T00:48:28Z",
+  "checked_at": "2026-10-28T13:38:53Z",
   "services": [
     {
       "name": "Cloud Secure Web Gateway",
       "slug": "cloud-secure-web-gateway",
       "url": "https://status.broadcom.com/services/cloud-secure-web-gateway",
-      "state": "under-maintenance",
-      "state_label": "점검 중",
-      "state_css": "warn",
-      "component_updated_at": "2026-10-26T03:17:15.193Z"
+      "state": "degraded",
+      "state_label": "장애 발생",
+      "state_css": "down",
+      "component_updated_at": "2026-10-28T12:47:01.686Z"
     },
     {
       "name": "CloudSOC CASB",
       "slug": "cloudsoc-casb",
       "url": "https://status.broadcom.com/services/cloudsoc-casb",
-      "state": "operational",
-      "state_label": "정상",
-      "state_css": "up",
-      "component_updated_at": "2026-10-08T10:10:59.872Z"
+      "state": "degraded",
+      "state_label": "장애 발생",
+      "state_css": "down",
+      "component_updated_at": "2026-10-28T12:27:53.154Z"
     },
     {
       "name": "DLP Cloud",
@@ -59,9 +59,9 @@
       "name": "Web Isolation",
       "slug": "web-isolation",
       "url": "https://status.broadcom.com/services/web-isolation",
-      "state": "operational",
-      "state_label": "정상",
-      "state_css": "up",
+      "state": "under-maintenance",
+      "state_label": "점검 중",
+      "state_css": "warn",
       "component_updated_at": "2026-10-27T23:34:07.425Z"
     }
   ]
