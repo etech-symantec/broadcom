@@ -9,3 +9,4 @@
 2026-10-29 15:18:00 - SERVER:172.16.70.214 [UP] [NAME:P214_DLP] [VER:7.3.15.1] [RAM:8192] [CORE:1] [POL:17] - CLIENT:10.82.160.75
 2026-10-29 15:18:00 - SERVER:172.16.70.217 [UP] [NAME:SM_P217] [VER:7.3.24.1] [RAM:20480] [CORE:4] [POL:91] - No connections
 2026-10-29 15:09:00 - SERVER:172.16.70.218 [UP] [NAME:Unknown] [VER:Unknown] [RAM:Unknown] [CORE:Unknown] [POL:Unknown] - No connections
+2026-10-29 15:00:00 - SERVER:172.16.70.218 [UP] [NAME:Unknown] [VER:Unknown] [RAM:Unknown] [CORE:Unknown] [POL:Unknown] - Auth Failed
