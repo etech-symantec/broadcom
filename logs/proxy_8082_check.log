@@ -11,3 +11,4 @@
 2026-10-29 13:39:00 - SERVER:172.16.70.217 [UP] [NAME:SM_P217] [VER:7.3.24.1] [RAM:20480] [CORE:4] [POL:91] - CLIENT:10.82.64.151
 2026-10-29 13:18:01 - SERVER:172.16.70.218 [UP] [NAME:Unknown] [VER:Unknown] [RAM:Unknown] [CORE:Unknown] [POL:Unknown] - CLIENT:10.82.64.138
 2026-10-29 13:18:01 - SERVER:172.16.70.218 [UP] [NAME:Unknown] [VER:Unknown] [RAM:Unknown] [CORE:Unknown] [POL:Unknown] - CLIENT:10.82.64.151
+2026-10-29 13:09:01 - SERVER:172.16.70.218 [UP] [NAME:Unknown] [VER:Unknown] [RAM:Unknown] [CORE:Unknown] [POL:Unknown] - Auth Failed
