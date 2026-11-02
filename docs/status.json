@@ -1,5 +1,5 @@
 {
-  "checked_at": "2026-11-02T01:06:09Z",
+  "checked_at": "2026-11-02T08:33:22Z",
   "services": [
     {
       "name": "Cloud Secure Web Gateway",
@@ -8,7 +8,7 @@
       "state": "operational",
       "state_label": "정상",
       "state_css": "up",
-      "component_updated_at": "2026-10-28T12:47:01.686Z"
+      "component_updated_at": "2026-11-02T01:41:59.565Z"
     },
     {
       "name": "CloudSOC CASB",
@@ -59,9 +59,9 @@
       "name": "Web Isolation",
       "slug": "web-isolation",
       "url": "https://status.broadcom.com/services/web-isolation",
-      "state": "operational",
-      "state_label": "정상",
-      "state_css": "up",
+      "state": "under-maintenance",
+      "state_label": "점검 중",
+      "state_css": "warn",
       "component_updated_at": "2026-11-01T12:04:07.913Z"
     }
   ]
