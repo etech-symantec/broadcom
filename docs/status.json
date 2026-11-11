@@ -1,13 +1,13 @@
 {
-  "checked_at": "2026-11-10T03:52:34Z",
+  "checked_at": "2026-11-11T01:34:00Z",
   "services": [
     {
       "name": "Cloud Secure Web Gateway",
       "slug": "cloud-secure-web-gateway",
       "url": "https://status.broadcom.com/services/cloud-secure-web-gateway",
-      "state": "operational",
-      "state_label": "정상",
-      "state_css": "up",
+      "state": "under-maintenance",
+      "state_label": "점검 중",
+      "state_css": "warn",
       "component_updated_at": "2026-11-09T16:52:50.664Z"
     },
     {
