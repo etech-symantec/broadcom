@@ -1,14 +1,14 @@
 {
-  "checked_at": "2026-11-13T02:14:10Z",
+  "checked_at": "2026-11-16T19:00:09Z",
   "services": [
     {
       "name": "Cloud Secure Web Gateway",
       "slug": "cloud-secure-web-gateway",
       "url": "https://status.broadcom.com/services/cloud-secure-web-gateway",
-      "state": "degraded",
-      "state_label": "장애 발생",
-      "state_css": "down",
-      "component_updated_at": "2026-11-12T20:07:06.924Z"
+      "state": "operational",
+      "state_label": "정상",
+      "state_css": "up",
+      "component_updated_at": "2026-11-16T04:46:01.210Z"
     },
     {
       "name": "CloudSOC CASB",
