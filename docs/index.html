@@ -5,6 +5,7 @@
 <link rel="stylesheet" href="https://etech-symantec.github.io/style.css" />
 <link href="https://cdnjs.cloudflare.com/ajax/libs/tabulator/5.5.2/css/tabulator.min.css" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/tabulator/5.5.2/js/tabulator.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <meta charset="UTF-8">
 
 <!-- Dongle 폰트 + 기본 스타일 유지 -->
@@ -642,7 +643,7 @@
             style="flex-shrink:0; padding:5px 10px; border:1px solid #d1d5db; border-radius:7px; background:#fff; font-size:0.72rem; cursor:pointer; white-space:nowrap;">CSV ↓</button>
           <button id="eolUploadBtn" onclick="triggerDbUpload()"
             style="flex-shrink:0; padding:5px 10px; border:1px solid #2563eb; border-radius:7px; background:#2563eb; color:#fff; font-size:0.72rem; cursor:pointer; white-space:nowrap;">⬆ 최신 DB 업로드</button>
-          <input type="file" id="eolUploadInput" accept=".xlsx" style="display:none;" onchange="handleDbFileSelected(event)">
+          <input type="file" id="eolUploadInput" accept=".xlsx,.xlsx.mask,.zip,.zip.mask,.mask" style="display:none;" onchange="handleDbFileSelected(event)">
           <span id="eolUploadStatus" style="flex-shrink:0; font-size:0.7rem; color:#6b7280; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:170px;"></span>
           <span id="eolCount" style="flex-shrink:0; font-size:0.72rem; color:#6b7280;"></span>
           <!-- pagination을 같은 줄 우측에 배치 -->
@@ -1722,32 +1723,73 @@ function setUploadStatus(msg, isError) {
   el.style.color = isError ? "#ef4444" : "#6b7280";
 }
 
+function normalizeDbFilename(name) {
+  return name.replace(/\.mask$/i, "");
+}
+
+async function prepareDbFile(selectedFile) {
+  const name = normalizeDbFilename(selectedFile.name);
+  if (/\.xlsx$/i.test(name)) {
+    return new File([selectedFile], name, {
+      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      lastModified: selectedFile.lastModified
+    });
+  }
+
+  if (!/\.zip$/i.test(name)) {
+    throw new Error(".xlsx 또는 .zip 파일만 업로드 가능합니다 (.mask 지원)");
+  }
+  if (typeof JSZip === "undefined") {
+    throw new Error("ZIP 압축 해제 모듈을 불러오지 못했습니다. 페이지를 새로고침해 주세요.");
+  }
+
+  setUploadStatus("ZIP 압축 해제 중…", false);
+  const zip = await JSZip.loadAsync(selectedFile);
+  const candidates = Object.values(zip.files).filter(entry => {
+    if (entry.dir) return false;
+    const parts = entry.name.split("/");
+    const base = parts.pop();
+    return !parts.includes("__MACOSX") && !base.startsWith(".") &&
+      !base.startsWith("~$") && /\.xlsx$/i.test(normalizeDbFilename(base));
+  });
+  if (!candidates.length) throw new Error("ZIP 내부에 .xlsx DB 파일이 없습니다.");
+  if (candidates.length !== 1) {
+    throw new Error("ZIP 내부에 .xlsx 파일이 여러 개 있습니다. DB 파일 1개만 포함해 주세요.");
+  }
+
+  const entry = candidates[0];
+  const dbName = normalizeDbFilename(entry.name.split("/").pop());
+  const bytes = await entry.async("uint8array");
+  return new File([bytes], dbName, {
+    type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    lastModified: entry.date?.getTime() || Date.now()
+  });
+}
+
 async function handleDbFileSelected(event) {
-  const file = event.target.files[0];
-  event.target.value = ""; // 같은 파일 재선택 가능하도록 초기화
-  if (!file) return;
-
-  if (!file.name.toLowerCase().endsWith(".xlsx")) {
-    setUploadStatus("⚠️ .xlsx 파일만 업로드 가능합니다", true);
-    return;
-  }
-
-  if (!_ghToken) {
-    _ghToken = window.prompt(
-      "GitHub Personal Access Token을 입력하세요.\n" +
-      "(repo 쓰기 권한 필요 · 이 탭을 새로고침할 때까지만 메모리에 보관되며 저장되지 않습니다)"
-    );
-    if (!_ghToken) {
-      setUploadStatus("업로드 취소됨 (토큰 미입력)", true);
-      return;
-    }
-  }
+  const selectedFile = event.target.files[0];
+  event.target.value = "";
+  if (!selectedFile) return;
 
   const uploadBtn = document.getElementById("eolUploadBtn");
+  if (uploadBtn.disabled) return;
   uploadBtn.disabled = true;
-  setUploadStatus("업로드 중…", false);
 
   try {
+    const file = await prepareDbFile(selectedFile);
+
+    if (!_ghToken) {
+      _ghToken = window.prompt(
+        "GitHub Personal Access Token을 입력하세요.\n" +
+        "(repo 쓰기 권한 필요 · 이 탭을 새로고침할 때까지만 메모리에 보관되며 저장되지 않습니다)"
+      );
+      if (!_ghToken) {
+        setUploadStatus("업로드 취소됨 (토큰 미입력)", true);
+        return;
+      }
+    }
+
+    setUploadStatus(file.name + " 업로드 중…", false);
     const base64Content = await fileToBase64(file);
     const path = `${GH_UPLOAD_DIR}/${file.name}`;
     const apiUrl = `https://api.github.com/repos/${GH_REPO_OWNER}/${GH_REPO_NAME}/contents/${encodeURIComponent(path)}`;
